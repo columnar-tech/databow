@@ -1,0 +1,25 @@
+name: continuous-integration
+on: [push]
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: build
+        run: cargo build
+
+      - name: lint
+        run: cargo clippy
+
+      - name: test
+        run: cargo test

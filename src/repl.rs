@@ -1,0 +1,53 @@
+use crate::highlighter::SyntectHighlighter;
+use adbc_core::{Connection, Statement};
+use arrow::util::pretty;
+use arrow_array::RecordBatch;
+use reedline::{DefaultPrompt, DefaultPromptSegment, Reedline, Signal};
+
+pub fn run_repl(mut connection: impl Connection) {
+    let mut line_editor = Reedline::create().with_highlighter(Box::new(SyntectHighlighter::new()));
+    let prompt = DefaultPrompt::new(DefaultPromptSegment::Empty, DefaultPromptSegment::Empty);
+
+    loop {
+        let signal = line_editor.read_line(&prompt);
+        match signal {
+            Ok(Signal::Success(buffer)) => {
+                let mut statement = match connection.new_statement() {
+                    Ok(statement) => statement,
+                    Err(err) => {
+                        println!("Failed to create statement: {err}");
+                        continue;
+                    }
+                };
+
+                if let Err(err) = statement.set_sql_query(buffer) {
+                    println!("Failed to set SQL query: {err}");
+                    continue;
+                }
+
+                let reader = match statement.execute() {
+                    Ok(reader) => reader,
+                    Err(err) => {
+                        println!("Failed to execute statement: {err}");
+                        continue;
+                    }
+                };
+
+                let batches: Vec<RecordBatch> = match reader.collect::<Result<_, _>>() {
+                    Ok(batches) => batches,
+                    Err(err) => {
+                        println!("Failed to collect batches: {err}");
+                        continue;
+                    }
+                };
+                if let Err(err) = pretty::print_batches(&batches) {
+                    println!("Failed to print batches: {err}");
+                }
+            }
+            Ok(Signal::CtrlD) | Ok(Signal::CtrlC) => {
+                break;
+            }
+            _ => {}
+        }
+    }
+}
