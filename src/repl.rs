@@ -12,6 +12,10 @@ pub fn run_repl(mut connection: impl Connection) {
         let signal = line_editor.read_line(&prompt);
         match signal {
             Ok(Signal::Success(buffer)) => {
+                if buffer.trim().is_empty() {
+                    continue;
+                }
+
                 let mut statement = match connection.new_statement() {
                     Ok(statement) => statement,
                     Err(err) => {
