@@ -30,7 +30,7 @@ pub fn parse_args() -> DatabaseConfig {
             .action(ArgAction::Append),
     ];
     let command = Command::new("adbcli")
-        .version("0.1.0-alpha")
+        .version(env!("CARGO_PKG_VERSION"))
         .about("Query databases via ADBC")
         .arg_required_else_help(true)
         .args(arguments);
