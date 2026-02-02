@@ -2,6 +2,7 @@ mod cli;
 mod database;
 mod highlighter;
 mod repl;
+mod table;
 
 fn main() {
     let config = cli::parse_args();

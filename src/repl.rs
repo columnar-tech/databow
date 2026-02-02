@@ -1,6 +1,6 @@
 use crate::highlighter::SyntectHighlighter;
+use crate::table::print_batches;
 use adbc_core::{Connection, Statement};
-use arrow::util::pretty;
 use arrow_array::RecordBatch;
 use reedline::{DefaultPrompt, DefaultPromptSegment, Reedline, Signal};
 
@@ -44,7 +44,7 @@ pub fn run_repl(mut connection: impl Connection) {
                         continue;
                     }
                 };
-                if let Err(err) = pretty::print_batches(&batches) {
+                if let Err(err) = print_batches(&batches) {
                     println!("Failed to print batches: {err}");
                 }
             }
