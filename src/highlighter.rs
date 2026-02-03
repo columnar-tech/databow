@@ -3,6 +3,7 @@ use reedline::{Highlighter, StyledText};
 use syntect::easy::HighlightLines;
 use syntect::highlighting::{FontStyle, Style as SyntectStyle, Theme, ThemeSet};
 use syntect::parsing::SyntaxSet;
+use terminal_colorsaurus::{QueryOptions, ThemeMode, theme_mode};
 
 pub struct SyntectHighlighter {
     syntax_set: SyntaxSet,
@@ -12,8 +13,7 @@ pub struct SyntectHighlighter {
 impl SyntectHighlighter {
     pub fn new() -> Self {
         let syntax_set = SyntaxSet::load_defaults_newlines();
-        let theme_set = ThemeSet::load_defaults();
-        let theme = theme_set.themes["base16-ocean.dark"].clone();
+        let theme = get_theme();
 
         Self { syntax_set, theme }
     }
@@ -71,5 +71,16 @@ impl Highlighter for SyntectHighlighter {
         }
 
         styled
+    }
+}
+
+fn get_theme() -> Theme {
+    let theme_set = ThemeSet::load_defaults();
+    let dark_theme = theme_set.themes["base16-ocean.dark"].clone();
+    let light_theme = theme_set.themes["base16-ocean.light"].clone();
+    match theme_mode(QueryOptions::default()) {
+        Ok(ThemeMode::Dark) => dark_theme,
+        Ok(ThemeMode::Light) => light_theme,
+        _ => dark_theme,
     }
 }
