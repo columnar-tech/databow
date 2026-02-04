@@ -225,7 +225,6 @@ dependencies = [
  "atoi",
  "base64",
  "chrono",
- "comfy-table",
  "half",
  "lexical-core",
  "num-traits",

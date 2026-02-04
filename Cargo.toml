@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 adbc_core = "0.22.0"
 adbc_driver_manager = "0.22.0"
-arrow = { version = "57.2.0", features = ["prettyprint"] }
+arrow = "57.2.0"
 arrow-array = "57.2.0"
 arrow-cast = "57.2.0"
 arrow-schema = "57.2.0"
