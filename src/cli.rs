@@ -119,4 +119,39 @@ mod tests {
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("key cannot be empty"));
     }
+
+    #[test]
+    fn test_database_config_creation() {
+        let config = DatabaseConfig {
+            driver_name: "test_driver".to_string(),
+            uri: Some("test_uri".to_string()),
+            username: Some("test_user".to_string()),
+            password: Some("test_pass".to_string()),
+            options: vec![("key1".to_string(), "val1".to_string())],
+        };
+
+        assert_eq!(config.driver_name, "test_driver");
+        assert_eq!(config.uri, Some("test_uri".to_string()));
+        assert_eq!(config.username, Some("test_user".to_string()));
+        assert_eq!(config.password, Some("test_pass".to_string()));
+        assert_eq!(config.options.len(), 1);
+        assert_eq!(config.options[0], ("key1".to_string(), "val1".to_string()));
+    }
+
+    #[test]
+    fn test_database_config_with_none_fields() {
+        let config = DatabaseConfig {
+            driver_name: "test_driver".to_string(),
+            uri: None,
+            username: None,
+            password: None,
+            options: vec![],
+        };
+
+        assert_eq!(config.driver_name, "test_driver");
+        assert_eq!(config.uri, None);
+        assert_eq!(config.username, None);
+        assert_eq!(config.password, None);
+        assert!(config.options.is_empty());
+    }
 }
