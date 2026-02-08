@@ -1,7 +1,7 @@
 use arrow_array::RecordBatch;
 use arrow_cast::display::array_value_to_string;
 use arrow_schema::ArrowError;
-use comfy_table::{Cell, Table};
+use comfy_table::{Cell, ContentArrangement, Table};
 
 pub fn print_batches(results: &[RecordBatch]) -> Result<(), ArrowError> {
     println!("{}", create_table(results)?);
@@ -11,6 +11,7 @@ pub fn print_batches(results: &[RecordBatch]) -> Result<(), ArrowError> {
 fn create_table(results: &[RecordBatch]) -> Result<Table, ArrowError> {
     let mut table = Table::new();
     table.load_preset("││──╞═╪╡│    ┬┴┌┐└┘");
+    table.set_content_arrangement(ContentArrangement::Dynamic);
 
     if results.is_empty() {
         return Ok(table);
