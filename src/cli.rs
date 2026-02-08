@@ -51,13 +51,13 @@ pub fn parse_args() -> DatabaseConfig {
     let mut options = Vec::new();
     if let Some(option_values) = matches.get_many::<String>("option") {
         for option in option_values {
-            let parts: Vec<&str> = option.splitn(2, '=').collect();
-            if parts.len() != 2 {
-                eprintln!("Invalid option format (expected key=value): {option}");
-                exit(1);
+            match parse_option(option) {
+                Ok((key, value)) => options.push((key, value)),
+                Err(err) => {
+                    eprintln!("{err}");
+                    exit(1);
+                }
             }
-            let (key, value) = (parts[0].to_string(), parts[1].to_string());
-            options.push((key, value));
         }
     }
 
@@ -67,5 +67,56 @@ pub fn parse_args() -> DatabaseConfig {
         username,
         password,
         options,
+    }
+}
+
+fn parse_option(option: &str) -> Result<(String, String), String> {
+    let parts: Vec<&str> = option.splitn(2, '=').collect();
+    if parts.len() != 2 {
+        return Err(format!(
+            "Invalid option format (expected key=value): {option}"
+        ));
+    }
+    let key = parts[0];
+    if key.is_empty() {
+        return Err(format!("Option key cannot be empty: {option}"));
+    }
+    Ok((key.to_string(), parts[1].to_string()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_option_valid() {
+        let result = parse_option("key=value");
+        assert_eq!(result, Ok(("key".to_string(), "value".to_string())));
+    }
+
+    #[test]
+    fn test_parse_option_with_equals_in_value() {
+        let result = parse_option("key=val=ue");
+        assert_eq!(result, Ok(("key".to_string(), "val=ue".to_string())));
+    }
+
+    #[test]
+    fn test_parse_option_no_equals() {
+        let result = parse_option("keyvalue");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Invalid option format"));
+    }
+
+    #[test]
+    fn test_parse_option_empty_value() {
+        let result = parse_option("key=");
+        assert_eq!(result, Ok(("key".to_string(), "".to_string())));
+    }
+
+    #[test]
+    fn test_parse_option_empty_key() {
+        let result = parse_option("=value");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("key cannot be empty"));
     }
 }
