@@ -6,6 +6,14 @@ icon: lucide/rocket
 
 A command-line tool for querying databases via [ADBC](https://arrow.apache.org/adbc/current/index.html).
 
+## Highlights
+
+- **Multi-database support** - Connect to any database with a compatible ADBC driver
+- **Interactive SQL shell** - Execute SQL queries with command history and intuitive navigation
+- **Syntax highlighting** - SQL queries highlighted for improved readability
+- **Formatted output** - Results displayed in clean, aligned tables with dynamic column width
+- **Fast and lightweight** - Built in Rust for high performance and minimal resource usage
+
 ## Getting Started
 
 Install the DuckDB ADBC driver with [dbc](https://docs.columnar.tech/dbc/):
