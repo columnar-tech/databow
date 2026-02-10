@@ -16,3 +16,6 @@ nu-ansi-term = "0.50.3"
 reedline = "0.45.0"
 syntect = "5.3.0"
 terminal-colorsaurus = "1.0.3"
+
+[dev-dependencies]
+tempfile = "3.14.0"

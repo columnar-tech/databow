@@ -1,6 +1,7 @@
 use crate::cli::DatabaseConfig;
+use crate::table;
 use adbc_core::options::{AdbcVersion, OptionDatabase, OptionValue};
-use adbc_core::{Connection, Database, Driver, LOAD_FLAG_DEFAULT};
+use adbc_core::{Connection, Database, Driver, LOAD_FLAG_DEFAULT, Statement};
 use adbc_driver_manager::ManagedDriver;
 use std::process::exit;
 
@@ -52,4 +53,28 @@ pub fn initialize_connection(config: DatabaseConfig) -> impl Connection {
             exit(1);
         }
     }
+}
+
+pub fn execute_query(connection: &mut impl adbc_core::Connection, sql: &str) -> Result<(), String> {
+    if sql.trim().is_empty() {
+        return Ok(());
+    }
+
+    let mut statement = connection
+        .new_statement()
+        .map_err(|e| format!("Failed to create statement: {e}"))?;
+
+    statement
+        .set_sql_query(sql)
+        .map_err(|e| format!("Failed to set SQL query: {e}"))?;
+
+    let reader = statement
+        .execute()
+        .map_err(|e| format!("Failed to execute statement: {e}"))?;
+
+    let batches: Vec<arrow_array::RecordBatch> = reader
+        .collect::<Result<_, _>>()
+        .map_err(|e| format!("Failed to collect batches: {e}"))?;
+
+    table::print_batches(&batches).map_err(|e| format!("Failed to print batches: {e}"))
 }

@@ -44,6 +44,22 @@ Driver-specific database option
 adbcli --driver duckdb --option path=file.db
 ```
 
+## --query
+
+Execute query and exit
+
+```sh
+adbcli --driver duckdb --query "SELECT 42 AS the_answer"
+```
+
+## --file
+
+Read and execute file and exit
+
+```sh
+adbcli --driver duckdb --file select_example.sql
+```
+
 ## --help
 
 Print the help message

@@ -1,5 +1,14 @@
 use clap::{Arg, ArgAction, Command};
+use std::path::PathBuf;
 use std::process::exit;
+
+#[derive(Debug, Clone)]
+pub enum QuerySource {
+    Query(String),
+    File(PathBuf),
+    Stdin,
+    Interactive,
+}
 
 pub struct DatabaseConfig {
     pub driver_name: String,
@@ -7,6 +16,12 @@ pub struct DatabaseConfig {
     pub username: Option<String>,
     pub password: Option<String>,
     pub options: Vec<(String, String)>,
+    pub query_source: QuerySource,
+}
+
+fn is_stdin_piped() -> bool {
+    use std::io::IsTerminal;
+    !std::io::stdin().is_terminal()
 }
 
 pub fn parse_args() -> DatabaseConfig {
@@ -28,6 +43,14 @@ pub fn parse_args() -> DatabaseConfig {
             .long("option")
             .help("Driver-specific database option")
             .action(ArgAction::Append),
+        Arg::new("query")
+            .long("query")
+            .help("Execute query and exit")
+            .conflicts_with("file"),
+        Arg::new("file")
+            .long("file")
+            .help("Read and execute file and exit")
+            .conflicts_with("query"),
     ];
     let command = Command::new("adbcli")
         .version(env!("CARGO_PKG_VERSION"))
@@ -61,12 +84,23 @@ pub fn parse_args() -> DatabaseConfig {
         }
     }
 
+    let query_source = if let Some(query) = matches.get_one::<String>("query") {
+        QuerySource::Query(query.clone())
+    } else if let Some(file) = matches.get_one::<String>("file") {
+        QuerySource::File(PathBuf::from(file))
+    } else if is_stdin_piped() {
+        QuerySource::Stdin
+    } else {
+        QuerySource::Interactive
+    };
+
     DatabaseConfig {
         driver_name,
         uri,
         username,
         password,
         options,
+        query_source,
     }
 }
 
@@ -128,6 +162,7 @@ mod tests {
             username: Some("test_user".to_string()),
             password: Some("test_pass".to_string()),
             options: vec![("key1".to_string(), "val1".to_string())],
+            query_source: QuerySource::Interactive,
         };
 
         assert_eq!(config.driver_name, "test_driver");
@@ -146,6 +181,7 @@ mod tests {
             username: None,
             password: None,
             options: vec![],
+            query_source: QuerySource::Interactive,
         };
 
         assert_eq!(config.driver_name, "test_driver");
