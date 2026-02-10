@@ -4,17 +4,15 @@ icon: lucide/download
 
 # Installation
 
-Clone the repository and change the working directory:
+Clone the repository and install the binary:
 
 ```sh
 git clone https://github.com/columnar-tech/adbcli.git
-cd adbcli
+cargo install --path adbcli
 ```
 
-Build the binary with [Cargo](https://doc.rust-lang.org/cargo/):
+Confirm the installation was successful:
 
 ```sh
-cargo build --release
+adbcli --version
 ```
-
-The binary will be built to `./target/release/adbcli`.

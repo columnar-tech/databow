@@ -12,20 +12,12 @@ A command-line tool for querying databases via [ADBC](https://arrow.apache.org/a
 
 ## Installation
 
-Clone the repository and change the working directory:
+Clone the repository and install the binary:
 
 ```sh
 git clone https://github.com/columnar-tech/adbcli.git
-cd adbcli
+cargo install --path adbcli
 ```
-
-Build the binary with [Cargo](https://doc.rust-lang.org/cargo/):
-
-```sh
-cargo build --release
-```
-
-The binary will be built to `./target/release/adbcli`.
 
 ## Getting Started
 
