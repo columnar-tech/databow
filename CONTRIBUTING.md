@@ -6,7 +6,7 @@ All contributors are expected to follow the [Code of Conduct](https://github.com
 
 Please file issues and feature requests on the GitHub issue tracker: https://github.com/columnar-tech/adbcli/issues
 
-Potential security vulnerabilities should be reported to [security@adbc-drivers.org](mailto:security@adbc-drivers.org) instead.
+Potential security vulnerabilities should be reported to [security@columnar.tech](mailto:security@columnar.tech) instead.
 
 ## Development
 
