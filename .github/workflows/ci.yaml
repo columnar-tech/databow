@@ -15,6 +15,12 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
+      - name: install dbc
+        run: curl -LsSf https://dbc.columnar.tech/install.sh | sh
+
+      - name: install duckdb driver
+        run: dbc install duckdb
+
       - name: build
         run: cargo build
 
