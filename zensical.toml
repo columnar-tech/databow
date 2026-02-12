@@ -5,6 +5,7 @@ copyright = "Copyright &copy; 2026 Columnar Technologies Inc."
 nav = [
     { "Getting Started" = "index.md" },
     { "Installation" = "installation.md" },
+    { "Databases" = "databases.md" },
     { "Reference" = "reference.md" },
 ]
 
