@@ -2,6 +2,11 @@
 icon: lucide/database
 ---
 
+<!--
+Copyright 2026 Columnar Technologies Inc.
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # Databases
 
 adbcli can connect to any database with a compatible ADBC driver.

@@ -1,3 +1,6 @@
+// Copyright 2026 Columnar Technologies Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::cli::DatabaseConfig;
 use crate::table;
 use adbc_core::options::{AdbcVersion, OptionDatabase, OptionValue};

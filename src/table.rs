@@ -1,3 +1,6 @@
+// Copyright 2026 Columnar Technologies Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 use arrow_array::RecordBatch;
 use arrow_cast::display::array_value_to_string;
 use arrow_schema::ArrowError;

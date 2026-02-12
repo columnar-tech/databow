@@ -2,6 +2,11 @@
 icon: lucide/rocket
 ---
 
+<!--
+Copyright 2026 Columnar Technologies Inc.
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # adbcli
 
 A command-line tool for querying databases via [ADBC](https://arrow.apache.org/adbc/current/index.html).

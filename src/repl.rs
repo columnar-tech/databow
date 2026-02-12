@@ -1,3 +1,6 @@
+// Copyright 2026 Columnar Technologies Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 use crate::highlighter::SyntectHighlighter;
 use crate::table::print_batches;
 use adbc_core::{Connection, Statement};

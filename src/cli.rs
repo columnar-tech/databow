@@ -1,3 +1,6 @@
+// Copyright 2026 Columnar Technologies Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 use clap::{Arg, ArgAction, Command};
 use std::path::PathBuf;
 use std::process::exit;

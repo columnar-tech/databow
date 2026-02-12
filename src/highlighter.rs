@@ -1,3 +1,6 @@
+// Copyright 2026 Columnar Technologies Inc.
+// SPDX-License-Identifier: Apache-2.0
+
 use nu_ansi_term::{Color, Style};
 use reedline::{Highlighter, StyledText};
 use syntect::easy::HighlightLines;

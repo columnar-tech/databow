@@ -2,6 +2,11 @@
 icon: lucide/download
 ---
 
+<!--
+Copyright 2026 Columnar Technologies Inc.
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # Installation
 
 Clone the repository and install the binary:
