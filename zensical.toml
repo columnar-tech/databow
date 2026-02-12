@@ -10,6 +10,8 @@ nav = [
 
 [project.theme]
 language = "en"
+logo = "images/logo.svg"
+favicon = "images/logo.svg"
 font = false
 features = [
     "announce.dismiss",
