@@ -3,6 +3,7 @@
 
 use nu_ansi_term::{Color, Style};
 use reedline::{Highlighter, StyledText};
+use std::io::Cursor;
 use syntect::easy::HighlightLines;
 use syntect::highlighting::{FontStyle, Style as SyntectStyle, Theme, ThemeSet};
 use syntect::parsing::SyntaxSet;
@@ -78,9 +79,14 @@ impl Highlighter for SyntectHighlighter {
 }
 
 fn get_theme() -> Theme {
-    let theme_set = ThemeSet::load_defaults();
-    let dark_theme = theme_set.themes["base16-ocean.dark"].clone();
-    let light_theme = theme_set.themes["base16-ocean.light"].clone();
+    let dark_theme_bytes = include_bytes!("../themes/catppuccin-mocha.tmTheme");
+    let light_theme_bytes = include_bytes!("../themes/catppuccin-latte.tmTheme");
+
+    let dark_theme = ThemeSet::load_from_reader(&mut Cursor::new(dark_theme_bytes))
+        .expect("Failed to load Catppuccin Mocha theme");
+    let light_theme = ThemeSet::load_from_reader(&mut Cursor::new(light_theme_bytes))
+        .expect("Failed to load Catppuccin Latte theme");
+
     match theme_mode(QueryOptions::default()) {
         Ok(ThemeMode::Dark) => dark_theme,
         Ok(ThemeMode::Light) => light_theme,
