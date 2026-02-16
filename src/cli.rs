@@ -1,6 +1,7 @@
 // Copyright 2026 Columnar Technologies Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::table::TableMode;
 use clap::{Arg, ArgAction, Command};
 use std::path::PathBuf;
 use std::process::exit;
@@ -20,6 +21,7 @@ pub struct DatabaseConfig {
     pub password: Option<String>,
     pub options: Vec<(String, String)>,
     pub query_source: QuerySource,
+    pub table_mode: TableMode,
 }
 
 fn is_stdin_piped() -> bool {
@@ -46,6 +48,10 @@ pub fn parse_args() -> DatabaseConfig {
             .long("option")
             .help("Driver-specific database option")
             .action(ArgAction::Append),
+        Arg::new("mode")
+            .long("mode")
+            .help("Table display style")
+            .default_value("utf8_full_condensed"),
         Arg::new("query")
             .long("query")
             .help("Execute query and exit")
@@ -97,6 +103,17 @@ pub fn parse_args() -> DatabaseConfig {
         QuerySource::Interactive
     };
 
+    let table_mode = match matches.get_one::<String>("mode") {
+        Some(mode_str) => match mode_str.parse::<TableMode>() {
+            Ok(mode) => mode,
+            Err(err) => {
+                eprintln!("{err}");
+                exit(1);
+            }
+        },
+        None => TableMode::default(),
+    };
+
     DatabaseConfig {
         driver_name,
         uri,
@@ -104,6 +121,7 @@ pub fn parse_args() -> DatabaseConfig {
         password,
         options,
         query_source,
+        table_mode,
     }
 }
 
@@ -166,6 +184,7 @@ mod tests {
             password: Some("test_pass".to_string()),
             options: vec![("key1".to_string(), "val1".to_string())],
             query_source: QuerySource::Interactive,
+            table_mode: TableMode::default(),
         };
 
         assert_eq!(config.driver_name, "test_driver");
@@ -185,6 +204,7 @@ mod tests {
             password: None,
             options: vec![],
             query_source: QuerySource::Interactive,
+            table_mode: TableMode::AsciiMarkdown,
         };
 
         assert_eq!(config.driver_name, "test_driver");
@@ -192,5 +212,6 @@ mod tests {
         assert_eq!(config.username, None);
         assert_eq!(config.password, None);
         assert!(config.options.is_empty());
+        assert_eq!(config.table_mode, TableMode::AsciiMarkdown);
     }
 }

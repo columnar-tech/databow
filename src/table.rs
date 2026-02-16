@@ -4,16 +4,100 @@
 use arrow_array::RecordBatch;
 use arrow_cast::display::array_value_to_string;
 use arrow_schema::ArrowError;
-use comfy_table::{Cell, ContentArrangement, Table};
+use comfy_table::{Cell, ContentArrangement, Table, presets};
+use std::fmt;
+use std::str::FromStr;
 
-pub fn print_batches(results: &[RecordBatch]) -> Result<(), ArrowError> {
-    println!("{}", create_table(results)?);
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+pub enum TableMode {
+    AsciiFull,
+    AsciiFullCondensed,
+    AsciiBordersOnly,
+    AsciiBordersOnlyCondensed,
+    AsciiHorizontalOnly,
+    AsciiMarkdown,
+    AsciiNoBorders,
+    Utf8Full,
+    #[default]
+    Utf8FullCondensed,
+    Utf8BordersOnly,
+    Utf8HorizontalOnly,
+    Utf8NoBorders,
+    Nothing,
+}
+
+impl TableMode {
+    fn as_preset(&self) -> &'static str {
+        match self {
+            Self::AsciiFull => presets::ASCII_FULL,
+            Self::AsciiFullCondensed => presets::ASCII_FULL_CONDENSED,
+            Self::AsciiBordersOnly => presets::ASCII_BORDERS_ONLY,
+            Self::AsciiBordersOnlyCondensed => presets::ASCII_BORDERS_ONLY_CONDENSED,
+            Self::AsciiHorizontalOnly => presets::ASCII_HORIZONTAL_ONLY,
+            Self::AsciiMarkdown => presets::ASCII_MARKDOWN,
+            Self::AsciiNoBorders => presets::ASCII_NO_BORDERS,
+            Self::Utf8Full => presets::UTF8_FULL,
+            Self::Utf8FullCondensed => presets::UTF8_FULL_CONDENSED,
+            Self::Utf8BordersOnly => presets::UTF8_BORDERS_ONLY,
+            Self::Utf8HorizontalOnly => presets::UTF8_HORIZONTAL_ONLY,
+            Self::Utf8NoBorders => presets::UTF8_NO_BORDERS,
+            Self::Nothing => presets::NOTHING,
+        }
+    }
+}
+
+impl FromStr for TableMode {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "ascii_full" => Ok(Self::AsciiFull),
+            "ascii_full_condensed" => Ok(Self::AsciiFullCondensed),
+            "ascii_borders_only" => Ok(Self::AsciiBordersOnly),
+            "ascii_borders_only_condensed" => Ok(Self::AsciiBordersOnlyCondensed),
+            "ascii_horizontal_only" => Ok(Self::AsciiHorizontalOnly),
+            "ascii_markdown" => Ok(Self::AsciiMarkdown),
+            "ascii_no_borders" => Ok(Self::AsciiNoBorders),
+            "utf8_full" => Ok(Self::Utf8Full),
+            "utf8_full_condensed" => Ok(Self::Utf8FullCondensed),
+            "utf8_borders_only" => Ok(Self::Utf8BordersOnly),
+            "utf8_horizontal_only" => Ok(Self::Utf8HorizontalOnly),
+            "utf8_no_borders" => Ok(Self::Utf8NoBorders),
+            "nothing" => Ok(Self::Nothing),
+            _ => Err(format!("Invalid mode: '{s}'")),
+        }
+    }
+}
+
+impl fmt::Display for TableMode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match self {
+            Self::AsciiFull => "ascii_full",
+            Self::AsciiFullCondensed => "ascii_full_condensed",
+            Self::AsciiBordersOnly => "ascii_borders_only",
+            Self::AsciiBordersOnlyCondensed => "ascii_borders_only_condensed",
+            Self::AsciiHorizontalOnly => "ascii_horizontal_only",
+            Self::AsciiMarkdown => "ascii_markdown",
+            Self::AsciiNoBorders => "ascii_no_borders",
+            Self::Utf8Full => "utf8_full",
+            Self::Utf8FullCondensed => "utf8_full_condensed",
+            Self::Utf8BordersOnly => "utf8_borders_only",
+            Self::Utf8HorizontalOnly => "utf8_horizontal_only",
+            Self::Utf8NoBorders => "utf8_no_borders",
+            Self::Nothing => "nothing",
+        };
+        write!(f, "{}", s)
+    }
+}
+
+pub fn print_batches(results: &[RecordBatch], mode: TableMode) -> Result<(), ArrowError> {
+    println!("{}", create_table(results, mode)?);
     Ok(())
 }
 
-fn create_table(results: &[RecordBatch]) -> Result<Table, ArrowError> {
+fn create_table(results: &[RecordBatch], mode: TableMode) -> Result<Table, ArrowError> {
     let mut table = Table::new();
-    table.load_preset("││──╞═╪╡│    ┬┴┌┐└┘");
+    table.load_preset(mode.as_preset());
     table.set_content_arrangement(ContentArrangement::Dynamic);
 
     if results.is_empty() {
@@ -75,7 +159,7 @@ mod tests {
     #[test]
     fn test_create_table_empty() {
         let results: Vec<RecordBatch> = vec![];
-        let table = create_table(&results).unwrap();
+        let table = create_table(&results, TableMode::default()).unwrap();
         // Empty table should be created successfully with no panic
         let _table_str = table.to_string();
     }
@@ -84,7 +168,7 @@ mod tests {
     fn test_create_table_single_batch() {
         let batch = create_test_batch();
         let results = vec![batch];
-        let table = create_table(&results).unwrap();
+        let table = create_table(&results, TableMode::default()).unwrap();
         let table_str = table.to_string();
 
         // Should contain headers
@@ -105,7 +189,7 @@ mod tests {
         let batch1 = create_test_batch();
         let batch2 = create_test_batch();
         let results = vec![batch1, batch2];
-        let table = create_table(&results).unwrap();
+        let table = create_table(&results, TableMode::default()).unwrap();
         let table_str = table.to_string();
 
         // Should have data from both batches (6 rows total)
@@ -136,7 +220,7 @@ mod tests {
             RecordBatch::try_new(schema2, vec![Arc::new(Int32Array::from(vec![2]))]).unwrap();
 
         let results = vec![batch1, batch2];
-        let result = create_table(&results);
+        let result = create_table(&results, TableMode::default());
 
         assert!(result.is_err());
         let err = result.unwrap_err();
@@ -150,7 +234,7 @@ mod tests {
     fn test_print_batches_empty() {
         let results: Vec<RecordBatch> = vec![];
         // Should not panic on empty results
-        let result = print_batches(&results);
+        let result = print_batches(&results, TableMode::default());
         assert!(result.is_ok());
     }
 
@@ -167,7 +251,7 @@ mod tests {
 
         let batch = RecordBatch::try_new(schema, vec![id_array, name_array]).unwrap();
         let results = vec![batch];
-        let table = create_table(&results).unwrap();
+        let table = create_table(&results, TableMode::default()).unwrap();
         let table_str = table.to_string();
 
         // Should contain headers
@@ -178,5 +262,100 @@ mod tests {
         assert!(table_str.contains("1"));
         assert!(table_str.contains("Alice"));
         assert!(table_str.contains("Bob"));
+    }
+
+    #[test]
+    fn test_table_mode_from_str_valid() {
+        assert_eq!(
+            "ascii_full".parse::<TableMode>().unwrap(),
+            TableMode::AsciiFull
+        );
+        assert_eq!(
+            "ascii_full_condensed".parse::<TableMode>().unwrap(),
+            TableMode::AsciiFullCondensed
+        );
+        assert_eq!(
+            "ascii_borders_only".parse::<TableMode>().unwrap(),
+            TableMode::AsciiBordersOnly
+        );
+        assert_eq!(
+            "ascii_borders_only_condensed".parse::<TableMode>().unwrap(),
+            TableMode::AsciiBordersOnlyCondensed
+        );
+        assert_eq!(
+            "ascii_horizontal_only".parse::<TableMode>().unwrap(),
+            TableMode::AsciiHorizontalOnly
+        );
+        assert_eq!(
+            "ascii_markdown".parse::<TableMode>().unwrap(),
+            TableMode::AsciiMarkdown
+        );
+        assert_eq!(
+            "ascii_no_borders".parse::<TableMode>().unwrap(),
+            TableMode::AsciiNoBorders
+        );
+        assert_eq!(
+            "utf8_full".parse::<TableMode>().unwrap(),
+            TableMode::Utf8Full
+        );
+        assert_eq!(
+            "utf8_full_condensed".parse::<TableMode>().unwrap(),
+            TableMode::Utf8FullCondensed
+        );
+        assert_eq!(
+            "utf8_borders_only".parse::<TableMode>().unwrap(),
+            TableMode::Utf8BordersOnly
+        );
+        assert_eq!(
+            "utf8_horizontal_only".parse::<TableMode>().unwrap(),
+            TableMode::Utf8HorizontalOnly
+        );
+        assert_eq!(
+            "utf8_no_borders".parse::<TableMode>().unwrap(),
+            TableMode::Utf8NoBorders
+        );
+        assert_eq!("nothing".parse::<TableMode>().unwrap(), TableMode::Nothing);
+    }
+
+    #[test]
+    fn test_table_mode_from_str_invalid() {
+        let result = "invalid_mode".parse::<TableMode>();
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(err.contains("Invalid mode: 'invalid_mode'"));
+    }
+
+    #[test]
+    fn test_table_mode_display() {
+        assert_eq!(TableMode::AsciiFull.to_string(), "ascii_full");
+        assert_eq!(
+            TableMode::Utf8FullCondensed.to_string(),
+            "utf8_full_condensed"
+        );
+        assert_eq!(TableMode::Nothing.to_string(), "nothing");
+    }
+
+    #[test]
+    fn test_table_mode_default() {
+        assert_eq!(TableMode::default(), TableMode::Utf8FullCondensed);
+    }
+
+    #[test]
+    fn test_create_table_with_different_modes() {
+        let batch = create_test_batch();
+        let results = vec![batch];
+
+        // Test that different modes produce valid tables
+        for mode in [
+            TableMode::AsciiFull,
+            TableMode::AsciiMarkdown,
+            TableMode::Utf8Full,
+            TableMode::Nothing,
+        ] {
+            let table = create_table(&results, mode).unwrap();
+            let table_str = table.to_string();
+            // All modes should still contain the data
+            assert!(table_str.contains("Alice"), "Mode {:?} missing data", mode);
+        }
     }
 }

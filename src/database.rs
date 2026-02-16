@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli::DatabaseConfig;
-use crate::table;
+use crate::table::{self, TableMode};
 use adbc_core::options::{AdbcVersion, OptionDatabase, OptionValue};
 use adbc_core::{Connection, Database, Driver, LOAD_FLAG_DEFAULT, Statement};
 use adbc_driver_manager::ManagedDriver;
@@ -58,7 +58,11 @@ pub fn initialize_connection(config: DatabaseConfig) -> impl Connection {
     }
 }
 
-pub fn execute_query(connection: &mut impl adbc_core::Connection, sql: &str) -> Result<(), String> {
+pub fn execute_query(
+    connection: &mut impl adbc_core::Connection,
+    sql: &str,
+    table_mode: TableMode,
+) -> Result<(), String> {
     if sql.trim().is_empty() {
         return Ok(());
     }
@@ -79,5 +83,5 @@ pub fn execute_query(connection: &mut impl adbc_core::Connection, sql: &str) -> 
         .collect::<Result<_, _>>()
         .map_err(|e| format!("Failed to collect batches: {e}"))?;
 
-    table::print_batches(&batches).map_err(|e| format!("Failed to print batches: {e}"))
+    table::print_batches(&batches, table_mode).map_err(|e| format!("Failed to print batches: {e}"))
 }

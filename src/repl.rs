@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::highlighter::SyntectHighlighter;
-use crate::table::print_batches;
+use crate::table::{TableMode, print_batches};
 use adbc_core::{Connection, Statement};
 use arrow_array::RecordBatch;
 use reedline::{DefaultPrompt, DefaultPromptSegment, Reedline, Signal};
 
-pub fn run_repl(mut connection: impl Connection) {
+pub fn run_repl(mut connection: impl Connection, table_mode: TableMode) {
     let mut line_editor = Reedline::create().with_highlighter(Box::new(SyntectHighlighter::new()));
     let prompt = DefaultPrompt::new(DefaultPromptSegment::Empty, DefaultPromptSegment::Empty);
 
@@ -47,7 +47,7 @@ pub fn run_repl(mut connection: impl Connection) {
                         continue;
                     }
                 };
-                if let Err(err) = print_batches(&batches) {
+                if let Err(err) = print_batches(&batches, table_mode) {
                     println!("Failed to print batches: {err}");
                 }
             }

@@ -110,6 +110,7 @@ Options:
       --username <username>  Database user username
       --password <password>  Database user password
       --option <option>      Driver-specific database option
+      --mode <mode>          Table display style [default: utf8_full_condensed]
       --query <query>        Execute query and exit
       --file <file>          Read and execute file and exit
   -h, --help                 Print help

@@ -14,11 +14,12 @@ use std::process::exit;
 fn main() {
     let config = parse_args();
     let query_source = config.query_source.clone();
+    let table_mode = config.table_mode;
 
     match query_source {
         QuerySource::Query(sql) => {
             let mut connection = database::initialize_connection(config);
-            if let Err(e) = database::execute_query(&mut connection, &sql) {
+            if let Err(e) = database::execute_query(&mut connection, &sql, table_mode) {
                 eprintln!("{e}");
                 exit(1);
             }
@@ -32,7 +33,7 @@ fn main() {
                 }
             };
             let mut connection = database::initialize_connection(config);
-            if let Err(e) = database::execute_query(&mut connection, &sql) {
+            if let Err(e) = database::execute_query(&mut connection, &sql, table_mode) {
                 eprintln!("{e}");
                 exit(1);
             }
@@ -44,14 +45,14 @@ fn main() {
                 exit(1);
             }
             let mut connection = database::initialize_connection(config);
-            if let Err(e) = database::execute_query(&mut connection, &sql) {
+            if let Err(e) = database::execute_query(&mut connection, &sql, table_mode) {
                 eprintln!("{e}");
                 exit(1);
             }
         }
         QuerySource::Interactive => {
             let connection = database::initialize_connection(config);
-            repl::run_repl(connection);
+            repl::run_repl(connection, table_mode);
         }
     }
 }

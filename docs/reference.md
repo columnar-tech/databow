@@ -49,6 +49,34 @@ Driver-specific database option
 adbcli --driver duckdb --option path=file.db
 ```
 
+## --mode
+
+Table display style
+
+**Default:** `utf8_full_condensed`
+
+All styling presets from [comfy_table](https://docs.rs/comfy-table/latest/comfy_table/presets/index.html) are supported:
+
+| Mode | Description |
+|------|-------------|
+| `ascii_full` | ASCII table with all borders |
+| `ascii_full_condensed` | ASCII table without row dividers |
+| `ascii_borders_only` | ASCII table with outer borders only |
+| `ascii_borders_only_condensed` | ASCII outer borders without row spacing |
+| `ascii_horizontal_only` | ASCII with horizontal lines only |
+| `ascii_markdown` | Markdown-compatible table format |
+| `ascii_no_borders` | ASCII table without any borders |
+| `utf8_full` | UTF-8 box drawing with all borders |
+| `utf8_full_condensed` | UTF-8 box drawing without row dividers |
+| `utf8_borders_only` | UTF-8 with outer borders only |
+| `utf8_horizontal_only` | UTF-8 with horizontal lines only |
+| `utf8_no_borders` | UTF-8 table without any borders |
+| `nothing` | No borders or lines |
+
+```sh
+adbcli --driver duckdb --mode ascii_markdown
+```
+
 ## --query
 
 Execute query and exit
