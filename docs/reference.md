@@ -53,10 +53,6 @@ adbcli --driver duckdb --option path=file.db
 
 Table display style
 
-**Default:** `utf8_full_condensed`
-
-All styling presets from [comfy_table](https://docs.rs/comfy-table/latest/comfy_table/presets/index.html) are supported:
-
 | Mode | Description |
 |------|-------------|
 | `ascii_full` | ASCII table with all borders |
@@ -66,6 +62,7 @@ All styling presets from [comfy_table](https://docs.rs/comfy-table/latest/comfy_
 | `ascii_horizontal_only` | ASCII with horizontal lines only |
 | `ascii_markdown` | Markdown-compatible table format |
 | `ascii_no_borders` | ASCII table without any borders |
+| `utf8_compact` | Compact UTF-8 table style (default) |
 | `utf8_full` | UTF-8 box drawing with all borders |
 | `utf8_full_condensed` | UTF-8 box drawing without row dividers |
 | `utf8_borders_only` | UTF-8 with outer borders only |

@@ -51,7 +51,7 @@ pub fn parse_args() -> DatabaseConfig {
         Arg::new("mode")
             .long("mode")
             .help("Table display style")
-            .default_value("utf8_full_condensed"),
+            .default_value("utf8_compact"),
         Arg::new("query")
             .long("query")
             .help("Execute query and exit")

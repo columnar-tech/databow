@@ -10,6 +10,8 @@ use std::str::FromStr;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq)]
 pub enum TableMode {
+    #[default]
+    Utf8Compact,
     AsciiFull,
     AsciiFullCondensed,
     AsciiBordersOnly,
@@ -18,7 +20,6 @@ pub enum TableMode {
     AsciiMarkdown,
     AsciiNoBorders,
     Utf8Full,
-    #[default]
     Utf8FullCondensed,
     Utf8BordersOnly,
     Utf8HorizontalOnly,
@@ -29,19 +30,20 @@ pub enum TableMode {
 impl TableMode {
     fn as_preset(&self) -> &'static str {
         match self {
-            Self::AsciiFull => presets::ASCII_FULL,
-            Self::AsciiFullCondensed => presets::ASCII_FULL_CONDENSED,
             Self::AsciiBordersOnly => presets::ASCII_BORDERS_ONLY,
             Self::AsciiBordersOnlyCondensed => presets::ASCII_BORDERS_ONLY_CONDENSED,
+            Self::AsciiFull => presets::ASCII_FULL,
+            Self::AsciiFullCondensed => presets::ASCII_FULL_CONDENSED,
             Self::AsciiHorizontalOnly => presets::ASCII_HORIZONTAL_ONLY,
             Self::AsciiMarkdown => presets::ASCII_MARKDOWN,
             Self::AsciiNoBorders => presets::ASCII_NO_BORDERS,
+            Self::Nothing => presets::NOTHING,
+            Self::Utf8BordersOnly => presets::UTF8_BORDERS_ONLY,
+            Self::Utf8Compact => "││──├─┼┤│    ┬┴┌┐└┘",
             Self::Utf8Full => presets::UTF8_FULL,
             Self::Utf8FullCondensed => presets::UTF8_FULL_CONDENSED,
-            Self::Utf8BordersOnly => presets::UTF8_BORDERS_ONLY,
             Self::Utf8HorizontalOnly => presets::UTF8_HORIZONTAL_ONLY,
             Self::Utf8NoBorders => presets::UTF8_NO_BORDERS,
-            Self::Nothing => presets::NOTHING,
         }
     }
 }
@@ -51,6 +53,7 @@ impl FromStr for TableMode {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
+            "utf8_compact" => Ok(Self::Utf8Compact),
             "ascii_full" => Ok(Self::AsciiFull),
             "ascii_full_condensed" => Ok(Self::AsciiFullCondensed),
             "ascii_borders_only" => Ok(Self::AsciiBordersOnly),
@@ -72,6 +75,7 @@ impl FromStr for TableMode {
 impl fmt::Display for TableMode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let s = match self {
+            Self::Utf8Compact => "utf8_compact",
             Self::AsciiFull => "ascii_full",
             Self::AsciiFullCondensed => "ascii_full_condensed",
             Self::AsciiBordersOnly => "ascii_borders_only",
@@ -337,7 +341,7 @@ mod tests {
 
     #[test]
     fn test_table_mode_default() {
-        assert_eq!(TableMode::default(), TableMode::Utf8FullCondensed);
+        assert_eq!(TableMode::default(), TableMode::Utf8Compact);
     }
 
     #[test]

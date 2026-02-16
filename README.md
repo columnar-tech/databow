@@ -46,13 +46,13 @@ Execute SQL queries:
 〉CREATE TABLE penguins AS FROM 'https://blobs.duckdb.org/data/penguins.csv';
 ┌───────┐
 │ Count │
-╞═══════╡
+├───────┤
 │ 344   │
 └───────┘
 〉SELECT * FROM penguins LIMIT 5;
 ┌─────────┬───────────┬────────────────┬───────────────┬───────────────────┬─────────────┬────────┬──────┐
 │ species │ island    │ bill_length_mm │ bill_depth_mm │ flipper_length_mm │ body_mass_g │ sex    │ year │
-╞═════════╪═══════════╪════════════════╪═══════════════╪═══════════════════╪═════════════╪════════╪══════╡
+├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼─────────────┼────────┼──────┤
 │ Adelie  │ Torgersen │ 39.1           │ 18.7          │ 181               │ 3750        │ male   │ 2007 │
 │ Adelie  │ Torgersen │ 39.5           │ 17.4          │ 186               │ 3800        │ female │ 2007 │
 │ Adelie  │ Torgersen │ 40.3           │ 18            │ 195               │ 3250        │ female │ 2007 │
@@ -66,21 +66,10 @@ Execute SQL queries:
 Execute a query directly and exit:
 
 ```console
-$ adbcli --driver duckdb --query "SELECT 2 AS favorite_num"
-┌──────────────┐
-│ favorite_num │
-╞══════════════╡
-│ 2            │
-└──────────────┘
-```
-
-Execute a query from a file and exit:
-
-```console
-$ adbcli --driver duckdb --file select_example.sql
+$ adbcli --driver duckdb --query "SELECT 42 AS the_answer"
 ┌────────────┐
 │ the_answer │
-╞════════════╡
+├────────────┤
 │ 42         │
 └────────────┘
 ```
@@ -88,12 +77,24 @@ $ adbcli --driver duckdb --file select_example.sql
 Execute a query from stdin and exit:
 
 ```console
-$ echo "SELECT 'Emil' AS name" | adbcli --driver duckdb
-┌──────┐
-│ name │
-╞══════╡
-│ Emil │
-└──────┘
+$ echo "SELECT 42 AS the_answer" | adbcli --driver duckdb
+┌────────────┐
+│ the_answer │
+├────────────┤
+│ 42         │
+└────────────┘
+```
+
+Execute a query from a file and exit:
+
+```console
+$ adbcli --driver duckdb --file select_example.sql
+┌────┬───────┬────────────┐
+│ id │ name  │ birthday   │
+├────┼───────┼────────────┤
+│ 1  │ Tom   │ 1992-10-16 │
+│ 2  │ Alice │ 2001-03-22 │
+└────┴───────┴────────────┘
 ```
 
 ## Reference
@@ -110,7 +111,7 @@ Options:
       --username <username>  Database user username
       --password <password>  Database user password
       --option <option>      Driver-specific database option
-      --mode <mode>          Table display style [default: utf8_full_condensed]
+      --mode <mode>          Table display style [default: utf8_compact]
       --query <query>        Execute query and exit
       --file <file>          Read and execute file and exit
   -h, --help                 Print help
