@@ -22,6 +22,7 @@ pub struct DatabaseConfig {
     pub options: Vec<(String, String)>,
     pub query_source: QuerySource,
     pub table_mode: TableMode,
+    pub output_path: Option<PathBuf>,
 }
 
 fn is_stdin_piped() -> bool {
@@ -60,6 +61,10 @@ pub fn parse_args() -> DatabaseConfig {
             .long("file")
             .help("Read and execute file and exit")
             .conflicts_with("query"),
+        Arg::new("output")
+            .long("output")
+            .help("Write result to file")
+            .value_name("file"),
     ];
     let command = Command::new("adbcli")
         .version(env!("CARGO_PKG_VERSION"))
@@ -114,6 +119,12 @@ pub fn parse_args() -> DatabaseConfig {
         None => TableMode::default(),
     };
 
+    let output_path = matches.get_one::<String>("output").map(PathBuf::from);
+    if output_path.is_some() && matches!(query_source, QuerySource::Interactive) {
+        eprintln!("Error: --output cannot be used in interactive mode");
+        exit(1);
+    }
+
     DatabaseConfig {
         driver_name,
         uri,
@@ -122,6 +133,7 @@ pub fn parse_args() -> DatabaseConfig {
         options,
         query_source,
         table_mode,
+        output_path,
     }
 }
 
@@ -185,6 +197,7 @@ mod tests {
             options: vec![("key1".to_string(), "val1".to_string())],
             query_source: QuerySource::Interactive,
             table_mode: TableMode::default(),
+            output_path: None,
         };
 
         assert_eq!(config.driver_name, "test_driver");
@@ -205,6 +218,7 @@ mod tests {
             options: vec![],
             query_source: QuerySource::Interactive,
             table_mode: TableMode::AsciiMarkdown,
+            output_path: None,
         };
 
         assert_eq!(config.driver_name, "test_driver");
@@ -213,5 +227,21 @@ mod tests {
         assert_eq!(config.password, None);
         assert!(config.options.is_empty());
         assert_eq!(config.table_mode, TableMode::AsciiMarkdown);
+    }
+
+    #[test]
+    fn test_database_config_with_output_path() {
+        let config = DatabaseConfig {
+            driver_name: "test_driver".to_string(),
+            uri: None,
+            username: None,
+            password: None,
+            options: vec![],
+            query_source: QuerySource::Query("SELECT 1".to_string()),
+            table_mode: TableMode::default(),
+            output_path: Some(PathBuf::from("output.json")),
+        };
+
+        assert_eq!(config.output_path, Some(PathBuf::from("output.json")));
     }
 }
