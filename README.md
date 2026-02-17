@@ -13,6 +13,7 @@ A command-line tool for querying databases via [ADBC](https://arrow.apache.org/a
 - **Interactive SQL shell** - Execute SQL queries with command history and intuitive navigation
 - **Syntax highlighting** - SQL queries highlighted for improved readability
 - **Formatted output** - Results displayed in clean, aligned tables with dynamic column width
+- **File export** - Export query results to JSON, CSV, or Arrow IPC files
 - **Fast and lightweight** - Built in Rust for high performance and minimal resource usage
 
 ## Installation
@@ -97,6 +98,14 @@ $ adbcli --driver duckdb --file select_example.sql
 └────┴───────┴────────────┘
 ```
 
+Execute a query and output the result to a file:
+
+```console
+$ adbcli --driver duckdb --query "SELECT 42 AS the_answer" --output result.json
+$ adbcli --driver duckdb --query "SELECT 42 AS the_answer" --output result.csv
+$ adbcli --driver duckdb --query "SELECT 42 AS the_answer" --output result.arrow
+```
+
 ## Reference
 
 ```console
@@ -114,6 +123,7 @@ Options:
       --mode <mode>          Table display style [default: utf8_compact]
       --query <query>        Execute query and exit
       --file <file>          Read and execute file and exit
+      --output <file>        Write result to file
   -h, --help                 Print help
   -V, --version              Print version
 ```

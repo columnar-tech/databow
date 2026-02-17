@@ -90,6 +90,22 @@ Read and execute file and exit
 adbcli --driver duckdb --file select_example.sql
 ```
 
+## --output
+
+Write result to file
+
+```sh
+adbcli --driver duckdb --query "SELECT 42 AS the_answer" --output result.json
+```
+
+The output format is inferred from the file extension:
+
+| Extension       | Format    |
+|-----------------|-----------|
+| `.json`         | JSON      |
+| `.csv`          | CSV       |
+| `.arrow`, `.ipc`| Arrow IPC |
+
 ## --help
 
 Print the help message
