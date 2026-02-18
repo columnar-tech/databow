@@ -22,20 +22,20 @@ pub fn run_repl(mut connection: impl Connection, table_mode: TableMode) {
                 let mut statement = match connection.new_statement() {
                     Ok(statement) => statement,
                     Err(err) => {
-                        println!("Failed to create statement: {err}");
+                        eprintln!("Failed to create statement: {err}");
                         continue;
                     }
                 };
 
                 if let Err(err) = statement.set_sql_query(buffer) {
-                    println!("Failed to set SQL query: {err}");
+                    eprintln!("Failed to set SQL query: {err}");
                     continue;
                 }
 
                 let reader = match statement.execute() {
                     Ok(reader) => reader,
                     Err(err) => {
-                        println!("Failed to execute statement: {err}");
+                        eprintln!("Failed to execute statement: {err}");
                         continue;
                     }
                 };
@@ -43,12 +43,12 @@ pub fn run_repl(mut connection: impl Connection, table_mode: TableMode) {
                 let batches: Vec<RecordBatch> = match reader.collect::<Result<_, _>>() {
                     Ok(batches) => batches,
                     Err(err) => {
-                        println!("Failed to collect batches: {err}");
+                        eprintln!("Failed to collect batches: {err}");
                         continue;
                     }
                 };
                 if let Err(err) = print_batches(&batches, table_mode) {
-                    println!("Failed to print batches: {err}");
+                    eprintln!("Failed to print batches: {err}");
                 }
             }
             Ok(Signal::CtrlD | Signal::CtrlC) => {
