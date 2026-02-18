@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::table::TableMode;
-use clap::{Arg, ArgAction, Command};
+use clap::{Arg, ArgAction, Command, value_parser};
 use std::path::PathBuf;
 use std::process::exit;
 
@@ -60,6 +60,7 @@ pub fn parse_args() -> DatabaseConfig {
         Arg::new("file")
             .long("file")
             .help("Read and execute file and exit")
+            .value_parser(value_parser!(PathBuf))
             .conflicts_with("query"),
         Arg::new("output")
             .long("output")
@@ -99,8 +100,8 @@ pub fn parse_args() -> DatabaseConfig {
 
     let query_source = if let Some(query) = matches.get_one::<String>("query") {
         QuerySource::Query(query.clone())
-    } else if let Some(file) = matches.get_one::<String>("file") {
-        QuerySource::File(PathBuf::from(file))
+    } else if let Some(file) = matches.get_one::<PathBuf>("file") {
+        QuerySource::File(file.clone())
     } else if is_stdin_piped() {
         QuerySource::Stdin
     } else {
