@@ -28,7 +28,7 @@ pub enum TableMode {
 }
 
 impl TableMode {
-    fn as_preset(&self) -> &'static str {
+    fn as_preset(self) -> &'static str {
         match self {
             Self::AsciiBordersOnly => presets::ASCII_BORDERS_ONLY,
             Self::AsciiBordersOnlyCondensed => presets::ASCII_BORDERS_ONLY_CONDENSED,
@@ -90,7 +90,7 @@ impl fmt::Display for TableMode {
             Self::Utf8NoBorders => "utf8_no_borders",
             Self::Nothing => "nothing",
         };
-        write!(f, "{}", s)
+        write!(f, "{s}")
     }
 }
 

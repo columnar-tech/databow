@@ -61,12 +61,9 @@ impl Highlighter for SyntectHighlighter {
 
         let mut highlighter = HighlightLines::new(syntax, &self.theme);
 
-        let ranges = match highlighter.highlight_line(line, &self.syntax_set) {
-            Ok(ranges) => ranges,
-            Err(_) => {
-                styled.push((Style::new(), line.to_string()));
-                return styled;
-            }
+        let Ok(ranges) = highlighter.highlight_line(line, &self.syntax_set) else {
+            styled.push((Style::new(), line.to_string()));
+            return styled;
         };
 
         for (style, text) in ranges {
@@ -88,7 +85,6 @@ fn get_theme() -> Theme {
         .expect("Failed to load Catppuccin Latte theme");
 
     match theme_mode(QueryOptions::default()) {
-        Ok(ThemeMode::Dark) => dark_theme,
         Ok(ThemeMode::Light) => light_theme,
         _ => dark_theme,
     }

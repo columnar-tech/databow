@@ -21,7 +21,7 @@ impl OutputFormat {
         match path.extension().and_then(|ext| ext.to_str()) {
             Some("json") => Ok(OutputFormat::Json),
             Some("csv") => Ok(OutputFormat::Csv),
-            Some("arrow") | Some("ipc") => Ok(OutputFormat::Arrow),
+            Some("arrow" | "ipc") => Ok(OutputFormat::Arrow),
             Some(ext) => Err(format!("Unsupported file extension: '.{ext}'")),
             None => Err("Cannot infer format: no file extension".to_string()),
         }
@@ -176,7 +176,7 @@ mod tests {
         let path = dir.path().join("output.arrow");
         let batch = create_test_batch();
 
-        write_batches_to_file(&[batch.clone()], &path).unwrap();
+        write_batches_to_file(std::slice::from_ref(&batch), &path).unwrap();
 
         // Verify by reading it back
         let file = File::open(&path).unwrap();

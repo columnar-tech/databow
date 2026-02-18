@@ -51,7 +51,7 @@ pub fn run_repl(mut connection: impl Connection, table_mode: TableMode) {
                     println!("Failed to print batches: {err}");
                 }
             }
-            Ok(Signal::CtrlD) | Ok(Signal::CtrlC) => {
+            Ok(Signal::CtrlD | Signal::CtrlC) => {
                 break;
             }
             _ => {}

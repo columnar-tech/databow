@@ -73,12 +73,11 @@ pub fn parse_args() -> DatabaseConfig {
         .args(arguments);
     let matches = command.get_matches();
 
-    let driver_name = match matches.get_one::<String>("driver") {
-        Some(name) => name.clone(),
-        None => {
-            eprintln!("Driver name is required");
-            exit(1);
-        }
+    let driver_name = if let Some(name) = matches.get_one::<String>("driver") {
+        name.clone()
+    } else {
+        eprintln!("Driver name is required");
+        exit(1);
     };
 
     let uri = matches.get_one::<String>("uri").cloned();
