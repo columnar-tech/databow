@@ -29,6 +29,10 @@ impl OutputFormat {
 }
 
 pub fn write_batches_to_file(batches: &[RecordBatch], path: &Path) -> Result<(), ArrowError> {
+    if batches.is_empty() {
+        return Ok(());
+    }
+
     let format = OutputFormat::from_path(path).map_err(ArrowError::InvalidArgumentError)?;
     let file = File::create(path).map_err(|e| ArrowError::IoError(e.to_string(), e))?;
 
@@ -59,10 +63,6 @@ fn write_csv(batches: &[RecordBatch], file: File) -> Result<(), ArrowError> {
 }
 
 fn write_arrow_ipc(batches: &[RecordBatch], file: File) -> Result<(), ArrowError> {
-    if batches.is_empty() {
-        return Ok(());
-    }
-
     let schema = batches[0].schema();
     let mut writer = IpcWriter::try_new(file, &schema)?;
     for batch in batches {
@@ -193,13 +193,11 @@ mod tests {
         let dir = tempdir().unwrap();
         let path = dir.path().join("output.json");
 
+        // Empty batches should not create a file
         write_batches_to_file(&[], &path).unwrap();
 
-        let mut file = File::open(&path).unwrap();
-        let mut contents = String::new();
-        file.read_to_string(&mut contents).unwrap();
-
-        assert_eq!(contents.trim(), "[]");
+        // Verify file was not created
+        assert!(!path.exists());
     }
 
     #[test]
@@ -207,11 +205,23 @@ mod tests {
         let dir = tempdir().unwrap();
         let path = dir.path().join("output.arrow");
 
-        // Empty batches should create an empty file (or nothing)
+        // Empty batches should not create a file
         write_batches_to_file(&[], &path).unwrap();
 
-        // File should not exist or be empty since we have no schema
-        assert!(!path.exists() || std::fs::metadata(&path).unwrap().len() == 0);
+        // Verify file was not created
+        assert!(!path.exists());
+    }
+
+    #[test]
+    fn test_write_empty_batches_csv() {
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("output.csv");
+
+        // Empty batches should not create a file
+        write_batches_to_file(&[], &path).unwrap();
+
+        // Verify file was not created
+        assert!(!path.exists());
     }
 
     #[test]
