@@ -8,18 +8,20 @@ mod output;
 mod repl;
 mod table;
 
-use cli::{QuerySource, parse_args};
+use cli::{AppConfig, QuerySource, parse_args};
 use std::io::Read;
 use std::process::exit;
 
 fn main() {
-    let config = parse_args();
-    let query_source = config.query_source.clone();
-    let table_mode = config.table_mode;
-    let output_path = config.output_path.clone();
+    let AppConfig {
+        connection,
+        query_source,
+        table_mode,
+        output_path,
+    } = parse_args();
 
     if matches!(query_source, QuerySource::Interactive) {
-        let connection = database::initialize_connection(config);
+        let connection = database::initialize_connection(connection);
         repl::run_repl(connection, table_mode);
         return;
     }
@@ -43,7 +45,7 @@ fn main() {
         QuerySource::Interactive => unreachable!(),
     };
 
-    let mut connection = database::initialize_connection(config);
+    let mut connection = database::initialize_connection(connection);
     let batches = database::execute_query(&mut connection, &sql).unwrap_or_else(|e| {
         eprintln!("{e}");
         exit(1);

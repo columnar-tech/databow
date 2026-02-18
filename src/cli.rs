@@ -14,12 +14,16 @@ pub enum QuerySource {
     Interactive,
 }
 
-pub struct DatabaseConfig {
+pub struct ConnectionConfig {
     pub driver_name: String,
     pub uri: Option<String>,
     pub username: Option<String>,
     pub password: Option<String>,
     pub options: Vec<(String, String)>,
+}
+
+pub struct AppConfig {
+    pub connection: ConnectionConfig,
     pub query_source: QuerySource,
     pub table_mode: TableMode,
     pub output_path: Option<PathBuf>,
@@ -30,7 +34,7 @@ fn is_stdin_piped() -> bool {
     !std::io::stdin().is_terminal()
 }
 
-pub fn parse_args() -> DatabaseConfig {
+pub fn parse_args() -> AppConfig {
     let arguments = [
         Arg::new("driver")
             .long("driver")
@@ -125,12 +129,14 @@ pub fn parse_args() -> DatabaseConfig {
         exit(1);
     }
 
-    DatabaseConfig {
-        driver_name,
-        uri,
-        username,
-        password,
-        options,
+    AppConfig {
+        connection: ConnectionConfig {
+            driver_name,
+            uri,
+            username,
+            password,
+            options,
+        },
         query_source,
         table_mode,
         output_path,
@@ -188,55 +194,64 @@ mod tests {
     }
 
     #[test]
-    fn test_database_config_creation() {
-        let config = DatabaseConfig {
-            driver_name: "test_driver".to_string(),
-            uri: Some("test_uri".to_string()),
-            username: Some("test_user".to_string()),
-            password: Some("test_pass".to_string()),
-            options: vec![("key1".to_string(), "val1".to_string())],
+    fn test_app_config_creation() {
+        let config = AppConfig {
+            connection: ConnectionConfig {
+                driver_name: "test_driver".to_string(),
+                uri: Some("test_uri".to_string()),
+                username: Some("test_user".to_string()),
+                password: Some("test_pass".to_string()),
+                options: vec![("key1".to_string(), "val1".to_string())],
+            },
             query_source: QuerySource::Interactive,
             table_mode: TableMode::default(),
             output_path: None,
         };
 
-        assert_eq!(config.driver_name, "test_driver");
-        assert_eq!(config.uri, Some("test_uri".to_string()));
-        assert_eq!(config.username, Some("test_user".to_string()));
-        assert_eq!(config.password, Some("test_pass".to_string()));
-        assert_eq!(config.options.len(), 1);
-        assert_eq!(config.options[0], ("key1".to_string(), "val1".to_string()));
+        assert_eq!(config.connection.driver_name, "test_driver");
+        assert_eq!(config.connection.uri, Some("test_uri".to_string()));
+        assert_eq!(config.connection.username, Some("test_user".to_string()));
+        assert_eq!(config.connection.password, Some("test_pass".to_string()));
+        assert_eq!(config.connection.options.len(), 1);
+        assert_eq!(
+            config.connection.options[0],
+            ("key1".to_string(), "val1".to_string())
+        );
     }
 
     #[test]
-    fn test_database_config_with_none_fields() {
-        let config = DatabaseConfig {
-            driver_name: "test_driver".to_string(),
-            uri: None,
-            username: None,
-            password: None,
-            options: vec![],
+    fn test_app_config_with_none_fields() {
+        let config = AppConfig {
+            connection: ConnectionConfig {
+                driver_name: "test_driver".to_string(),
+                uri: None,
+                username: None,
+                password: None,
+                options: vec![],
+            },
             query_source: QuerySource::Interactive,
             table_mode: TableMode::AsciiMarkdown,
             output_path: None,
         };
 
-        assert_eq!(config.driver_name, "test_driver");
-        assert_eq!(config.uri, None);
-        assert_eq!(config.username, None);
-        assert_eq!(config.password, None);
-        assert!(config.options.is_empty());
+        assert_eq!(config.connection.driver_name, "test_driver");
+        assert_eq!(config.connection.uri, None);
+        assert_eq!(config.connection.username, None);
+        assert_eq!(config.connection.password, None);
+        assert!(config.connection.options.is_empty());
         assert_eq!(config.table_mode, TableMode::AsciiMarkdown);
     }
 
     #[test]
-    fn test_database_config_with_output_path() {
-        let config = DatabaseConfig {
-            driver_name: "test_driver".to_string(),
-            uri: None,
-            username: None,
-            password: None,
-            options: vec![],
+    fn test_app_config_with_output_path() {
+        let config = AppConfig {
+            connection: ConnectionConfig {
+                driver_name: "test_driver".to_string(),
+                uri: None,
+                username: None,
+                password: None,
+                options: vec![],
+            },
             query_source: QuerySource::Query("SELECT 1".to_string()),
             table_mode: TableMode::default(),
             output_path: Some(PathBuf::from("output.json")),

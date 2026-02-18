@@ -1,14 +1,14 @@
 // Copyright 2026 Columnar Technologies Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::cli::DatabaseConfig;
+use crate::cli::ConnectionConfig;
 use adbc_core::options::{AdbcVersion, OptionDatabase, OptionValue};
 use adbc_core::{Connection, Database, Driver, LOAD_FLAG_DEFAULT, Statement};
 use adbc_driver_manager::ManagedDriver;
 use arrow_array::RecordBatch;
 use std::process::exit;
 
-pub fn initialize_connection(config: DatabaseConfig) -> impl Connection {
+pub fn initialize_connection(config: ConnectionConfig) -> impl Connection {
     let mut driver = match ManagedDriver::load_from_name(
         &config.driver_name,
         None,
