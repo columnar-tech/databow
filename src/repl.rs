@@ -1,10 +1,10 @@
 // Copyright 2026 Columnar Technologies Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::database;
 use crate::highlighter::SyntectHighlighter;
 use crate::table::{TableMode, print_batches};
-use adbc_core::{Connection, Statement};
-use arrow_array::RecordBatch;
+use adbc_core::Connection;
 use reedline::{DefaultPrompt, DefaultPromptSegment, Reedline, Signal};
 
 pub fn run_repl(mut connection: impl Connection, table_mode: TableMode) {
@@ -19,31 +19,10 @@ pub fn run_repl(mut connection: impl Connection, table_mode: TableMode) {
                     continue;
                 }
 
-                let mut statement = match connection.new_statement() {
-                    Ok(statement) => statement,
-                    Err(err) => {
-                        eprintln!("Failed to create statement: {err}");
-                        continue;
-                    }
-                };
-
-                if let Err(err) = statement.set_sql_query(buffer) {
-                    eprintln!("Failed to set SQL query: {err}");
-                    continue;
-                }
-
-                let reader = match statement.execute() {
-                    Ok(reader) => reader,
-                    Err(err) => {
-                        eprintln!("Failed to execute statement: {err}");
-                        continue;
-                    }
-                };
-
-                let batches: Vec<RecordBatch> = match reader.collect::<Result<_, _>>() {
+                let batches = match database::execute_query(&mut connection, &buffer) {
                     Ok(batches) => batches,
                     Err(err) => {
-                        eprintln!("Failed to collect batches: {err}");
+                        eprintln!("{err}");
                         continue;
                     }
                 };
