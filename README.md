@@ -120,7 +120,7 @@ Options:
       --username <username>  Database user username
       --password <password>  Database user password
       --option <option>      Driver-specific database option
-      --mode <mode>          Table display style [default: utf8_compact]
+      --mode <mode>          Table display style [default: utf8-compact]
       --query <query>        Execute query and exit
       --file <file>          Read and execute file and exit
       --output <file>        Write result to file

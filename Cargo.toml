@@ -10,7 +10,7 @@ arrow = "57.2.0"
 arrow-array = "57.2.0"
 arrow-cast = "57.2.0"
 arrow-schema = "57.2.0"
-clap = "4.5.54"
+clap = { version = "4.5.54", features = ["derive"] }
 comfy-table = "7.2.2"
 nu-ansi-term = "0.50.3"
 reedline = "0.45.0"

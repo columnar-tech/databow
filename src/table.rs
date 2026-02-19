@@ -4,11 +4,11 @@
 use arrow_array::RecordBatch;
 use arrow_cast::display::array_value_to_string;
 use arrow_schema::ArrowError;
+use clap::ValueEnum;
 use comfy_table::{Cell, ContentArrangement, Table, presets};
 use std::fmt;
-use std::str::FromStr;
 
-#[derive(Debug, Clone, Copy, Default, PartialEq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, ValueEnum)]
 pub enum TableMode {
     #[default]
     Utf8Compact,
@@ -48,49 +48,15 @@ impl TableMode {
     }
 }
 
-impl FromStr for TableMode {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "utf8_compact" => Ok(Self::Utf8Compact),
-            "ascii_full" => Ok(Self::AsciiFull),
-            "ascii_full_condensed" => Ok(Self::AsciiFullCondensed),
-            "ascii_borders_only" => Ok(Self::AsciiBordersOnly),
-            "ascii_borders_only_condensed" => Ok(Self::AsciiBordersOnlyCondensed),
-            "ascii_horizontal_only" => Ok(Self::AsciiHorizontalOnly),
-            "ascii_markdown" => Ok(Self::AsciiMarkdown),
-            "ascii_no_borders" => Ok(Self::AsciiNoBorders),
-            "utf8_full" => Ok(Self::Utf8Full),
-            "utf8_full_condensed" => Ok(Self::Utf8FullCondensed),
-            "utf8_borders_only" => Ok(Self::Utf8BordersOnly),
-            "utf8_horizontal_only" => Ok(Self::Utf8HorizontalOnly),
-            "utf8_no_borders" => Ok(Self::Utf8NoBorders),
-            "nothing" => Ok(Self::Nothing),
-            _ => Err(format!("Invalid mode: '{s}'")),
-        }
-    }
-}
-
 impl fmt::Display for TableMode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let s = match self {
-            Self::Utf8Compact => "utf8_compact",
-            Self::AsciiFull => "ascii_full",
-            Self::AsciiFullCondensed => "ascii_full_condensed",
-            Self::AsciiBordersOnly => "ascii_borders_only",
-            Self::AsciiBordersOnlyCondensed => "ascii_borders_only_condensed",
-            Self::AsciiHorizontalOnly => "ascii_horizontal_only",
-            Self::AsciiMarkdown => "ascii_markdown",
-            Self::AsciiNoBorders => "ascii_no_borders",
-            Self::Utf8Full => "utf8_full",
-            Self::Utf8FullCondensed => "utf8_full_condensed",
-            Self::Utf8BordersOnly => "utf8_borders_only",
-            Self::Utf8HorizontalOnly => "utf8_horizontal_only",
-            Self::Utf8NoBorders => "utf8_no_borders",
-            Self::Nothing => "nothing",
-        };
-        write!(f, "{s}")
+        write!(
+            f,
+            "{}",
+            self.to_possible_value()
+                .expect("no values are skipped")
+                .get_name()
+        )
     }
 }
 
@@ -269,72 +235,77 @@ mod tests {
     }
 
     #[test]
-    fn test_table_mode_from_str_valid() {
+    fn test_table_mode_value_enum_valid() {
+        use clap::ValueEnum;
+
         assert_eq!(
-            "ascii_full".parse::<TableMode>().unwrap(),
+            TableMode::from_str("ascii-full", false).unwrap(),
             TableMode::AsciiFull
         );
         assert_eq!(
-            "ascii_full_condensed".parse::<TableMode>().unwrap(),
+            TableMode::from_str("ascii-full-condensed", false).unwrap(),
             TableMode::AsciiFullCondensed
         );
         assert_eq!(
-            "ascii_borders_only".parse::<TableMode>().unwrap(),
+            TableMode::from_str("ascii-borders-only", false).unwrap(),
             TableMode::AsciiBordersOnly
         );
         assert_eq!(
-            "ascii_borders_only_condensed".parse::<TableMode>().unwrap(),
+            TableMode::from_str("ascii-borders-only-condensed", false).unwrap(),
             TableMode::AsciiBordersOnlyCondensed
         );
         assert_eq!(
-            "ascii_horizontal_only".parse::<TableMode>().unwrap(),
+            TableMode::from_str("ascii-horizontal-only", false).unwrap(),
             TableMode::AsciiHorizontalOnly
         );
         assert_eq!(
-            "ascii_markdown".parse::<TableMode>().unwrap(),
+            TableMode::from_str("ascii-markdown", false).unwrap(),
             TableMode::AsciiMarkdown
         );
         assert_eq!(
-            "ascii_no_borders".parse::<TableMode>().unwrap(),
+            TableMode::from_str("ascii-no-borders", false).unwrap(),
             TableMode::AsciiNoBorders
         );
         assert_eq!(
-            "utf8_full".parse::<TableMode>().unwrap(),
+            TableMode::from_str("utf8-full", false).unwrap(),
             TableMode::Utf8Full
         );
         assert_eq!(
-            "utf8_full_condensed".parse::<TableMode>().unwrap(),
+            TableMode::from_str("utf8-full-condensed", false).unwrap(),
             TableMode::Utf8FullCondensed
         );
         assert_eq!(
-            "utf8_borders_only".parse::<TableMode>().unwrap(),
+            TableMode::from_str("utf8-borders-only", false).unwrap(),
             TableMode::Utf8BordersOnly
         );
         assert_eq!(
-            "utf8_horizontal_only".parse::<TableMode>().unwrap(),
+            TableMode::from_str("utf8-horizontal-only", false).unwrap(),
             TableMode::Utf8HorizontalOnly
         );
         assert_eq!(
-            "utf8_no_borders".parse::<TableMode>().unwrap(),
+            TableMode::from_str("utf8-no-borders", false).unwrap(),
             TableMode::Utf8NoBorders
         );
-        assert_eq!("nothing".parse::<TableMode>().unwrap(), TableMode::Nothing);
+        assert_eq!(
+            TableMode::from_str("nothing", false).unwrap(),
+            TableMode::Nothing
+        );
     }
 
     #[test]
-    fn test_table_mode_from_str_invalid() {
-        let result = "invalid_mode".parse::<TableMode>();
+    fn test_table_mode_value_enum_invalid() {
+        use clap::ValueEnum;
+
+        let result = TableMode::from_str("invalid_mode", false);
         assert!(result.is_err());
-        let err = result.unwrap_err();
-        assert!(err.contains("Invalid mode: 'invalid_mode'"));
     }
 
     #[test]
     fn test_table_mode_display() {
-        assert_eq!(TableMode::AsciiFull.to_string(), "ascii_full");
+        assert_eq!(TableMode::AsciiFull.to_string(), "ascii-full");
         assert_eq!(
             TableMode::Utf8FullCondensed.to_string(),
-            "utf8_full_condensed"
+            "utf8-full-condensed"
         );
         assert_eq!(TableMode::Nothing.to_string(), "nothing");
     }

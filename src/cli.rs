@@ -56,7 +56,9 @@ pub fn parse_args() -> AppConfig {
         Arg::new("mode")
             .long("mode")
             .help("Table display style")
-            .default_value("utf8_compact"),
+            .value_parser(value_parser!(TableMode))
+            .default_value("utf8-compact")
+            .hide_possible_values(true),
         Arg::new("query")
             .long("query")
             .help("Execute query and exit")
@@ -112,16 +114,10 @@ pub fn parse_args() -> AppConfig {
         QuerySource::Interactive
     };
 
-    let table_mode = match matches.get_one::<String>("mode") {
-        Some(mode_str) => match mode_str.parse::<TableMode>() {
-            Ok(mode) => mode,
-            Err(err) => {
-                eprintln!("{err}");
-                exit(1);
-            }
-        },
-        None => TableMode::default(),
-    };
+    let table_mode = matches
+        .get_one::<TableMode>("mode")
+        .copied()
+        .unwrap_or_default();
 
     let output_path = matches.get_one::<String>("output").map(PathBuf::from);
     if output_path.is_some() && matches!(query_source, QuerySource::Interactive) {

@@ -55,23 +55,23 @@ Table display style
 
 | Mode | Description |
 |------|-------------|
-| `ascii_full` | ASCII table with all borders |
-| `ascii_full_condensed` | ASCII table without row dividers |
-| `ascii_borders_only` | ASCII table with outer borders only |
-| `ascii_borders_only_condensed` | ASCII outer borders without row spacing |
-| `ascii_horizontal_only` | ASCII with horizontal lines only |
-| `ascii_markdown` | Markdown-compatible table format |
-| `ascii_no_borders` | ASCII table without any borders |
-| `utf8_compact` | Compact UTF-8 table style (default) |
-| `utf8_full` | UTF-8 box drawing with all borders |
-| `utf8_full_condensed` | UTF-8 box drawing without row dividers |
-| `utf8_borders_only` | UTF-8 with outer borders only |
-| `utf8_horizontal_only` | UTF-8 with horizontal lines only |
-| `utf8_no_borders` | UTF-8 table without any borders |
+| `ascii-full` | ASCII table with all borders |
+| `ascii-full-condensed` | ASCII table without row dividers |
+| `ascii-borders-only` | ASCII table with outer borders only |
+| `ascii-borders-only-condensed` | ASCII outer borders without row spacing |
+| `ascii-horizontal-only` | ASCII with horizontal lines only |
+| `ascii-markdown` | Markdown-compatible table format |
+| `ascii-no-borders` | ASCII table without any borders |
+| `utf8-compact` | Compact UTF-8 table style (default) |
+| `utf8-full` | UTF-8 box drawing with all borders |
+| `utf8-full-condensed` | UTF-8 box drawing without row dividers |
+| `utf8-borders-only` | UTF-8 with outer borders only |
+| `utf8-horizontal-only` | UTF-8 with horizontal lines only |
+| `utf8-no-borders` | UTF-8 table without any borders |
 | `nothing` | No borders or lines |
 
 ```sh
-adbcli --driver duckdb --mode ascii_markdown
+adbcli --driver duckdb --mode ascii-markdown
 ```
 
 ## --query
