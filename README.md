@@ -29,28 +29,30 @@ cargo install --path adbcli
 
 Install the DuckDB ADBC driver with [dbc](https://docs.columnar.tech/dbc/):
 
-```console
-$ dbc install duckdb
+```sh
+dbc install duckdb
 ```
 
 ### Interactive Usage
 
 Connect to DuckDB (in-memory):
 
-```console
-$ adbcli --driver duckdb
+```sh
+adbcli --driver duckdb
 ```
 
 Execute SQL queries:
 
 ```
-〉CREATE TABLE penguins AS FROM 'https://blobs.duckdb.org/data/penguins.csv';
+> CREATE TABLE penguins AS FROM 'https://blobs.duckdb.org/data/penguins.csv';
 ┌───────┐
 │ Count │
 ├───────┤
 │ 344   │
 └───────┘
-〉SELECT * FROM penguins LIMIT 5;
+> SELECT *
+. FROM penguins
+. LIMIT 5;
 ┌─────────┬───────────┬────────────────┬───────────────┬───────────────────┬─────────────┬────────┬──────┐
 │ species │ island    │ bill_length_mm │ bill_depth_mm │ flipper_length_mm │ body_mass_g │ sex    │ year │
 ├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼─────────────┼────────┼──────┤
@@ -66,44 +68,28 @@ Execute SQL queries:
 
 Execute a query directly and exit:
 
-```console
-$ adbcli --driver duckdb --query "SELECT 42 AS the_answer"
-┌────────────┐
-│ the_answer │
-├────────────┤
-│ 42         │
-└────────────┘
+```sh
+adbcli --driver duckdb --query "SELECT 42 AS the_answer"
 ```
 
 Execute a query from stdin and exit:
 
-```console
-$ echo "SELECT 42 AS the_answer" | adbcli --driver duckdb
-┌────────────┐
-│ the_answer │
-├────────────┤
-│ 42         │
-└────────────┘
+```sh
+echo "SELECT 42 AS the_answer" | adbcli --driver duckdb
 ```
 
 Execute a query from a file and exit:
 
-```console
-$ adbcli --driver duckdb --file select_example.sql
-┌────┬───────┬────────────┐
-│ id │ name  │ birthday   │
-├────┼───────┼────────────┤
-│ 1  │ Tom   │ 1992-10-16 │
-│ 2  │ Alice │ 2001-03-22 │
-└────┴───────┴────────────┘
+```sh
+adbcli --driver duckdb --file select_example.sql
 ```
 
 Execute a query and output the result to a file:
 
-```console
-$ adbcli --driver duckdb --query "SELECT 42 AS the_answer" --output result.json
-$ adbcli --driver duckdb --query "SELECT 42 AS the_answer" --output result.csv
-$ adbcli --driver duckdb --query "SELECT 42 AS the_answer" --output result.arrow
+```sh
+adbcli --driver duckdb --query "SELECT 42 AS the_answer" --output result.json
+adbcli --driver duckdb --query "SELECT 42 AS the_answer" --output result.csv
+adbcli --driver duckdb --query "SELECT 42 AS the_answer" --output result.arrow
 ```
 
 ## Reference
