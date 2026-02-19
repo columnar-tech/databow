@@ -63,6 +63,9 @@ fn write_csv(batches: &[RecordBatch], file: File) -> Result<(), ArrowError> {
 }
 
 fn write_arrow_ipc(batches: &[RecordBatch], file: File) -> Result<(), ArrowError> {
+    if batches.is_empty() {
+        return Ok(());
+    }
     let schema = batches[0].schema();
     let mut writer = IpcWriter::try_new(file, &schema)?;
     for batch in batches {
@@ -186,6 +189,22 @@ mod tests {
         assert_eq!(read_batches.len(), 1);
         assert_eq!(read_batches[0].num_rows(), batch.num_rows());
         assert_eq!(read_batches[0].num_columns(), batch.num_columns());
+    }
+
+    #[test]
+    fn test_write_arrow_ipc_empty_batches_direct() {
+        // Test that write_arrow_ipc handles empty batches directly (defensive coding)
+        // This is a regression test for the panic that would occur at src/output.rs:66
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("output.arrow");
+        let file = File::create(&path).unwrap();
+
+        // Direct call to write_arrow_ipc with empty batches - should not panic
+        let result = write_arrow_ipc(&[], file);
+
+        assert!(result.is_ok());
+        // File should be created but empty since we opened it before the empty check
+        // Actually, let's just verify it doesn't panic and returns Ok
     }
 
     #[test]
