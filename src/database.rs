@@ -6,9 +6,8 @@ use adbc_core::options::{AdbcVersion, OptionDatabase, OptionValue};
 use adbc_core::{Connection, Database, Driver, LOAD_FLAG_DEFAULT, Statement};
 use adbc_driver_manager::ManagedDriver;
 use arrow_array::RecordBatch;
-use std::process::exit;
 
-pub fn initialize_connection(config: ConnectionConfig) -> impl Connection {
+pub fn initialize_connection(config: ConnectionConfig) -> Result<impl Connection, String> {
     let mut driver = match ManagedDriver::load_from_name(
         &config.driver_name,
         None,
@@ -17,10 +16,7 @@ pub fn initialize_connection(config: ConnectionConfig) -> impl Connection {
         None,
     ) {
         Ok(driver) => driver,
-        Err(err) => {
-            eprintln!("Failed to load driver: {err}");
-            exit(1);
-        }
+        Err(err) => return Err(format!("Failed to load driver: {err}")),
     };
 
     let mut options = Vec::new();
@@ -43,18 +39,12 @@ pub fn initialize_connection(config: ConnectionConfig) -> impl Connection {
 
     let database = match driver.new_database_with_opts(options) {
         Ok(database) => database,
-        Err(err) => {
-            eprintln!("Failed to create database handle: {err}");
-            exit(1);
-        }
+        Err(err) => return Err(format!("Failed to create database handle: {err}")),
     };
 
     match database.new_connection() {
-        Ok(connection) => connection,
-        Err(err) => {
-            eprintln!("Failed to create connection: {err}");
-            exit(1);
-        }
+        Ok(connection) => Ok(connection),
+        Err(err) => Err(format!("Failed to create connection: {err}")),
     }
 }
 

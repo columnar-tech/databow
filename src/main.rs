@@ -21,7 +21,10 @@ fn main() {
     } = parse_args();
 
     if matches!(query_source, QuerySource::Interactive) {
-        let connection = database::initialize_connection(connection);
+        let connection = database::initialize_connection(connection).unwrap_or_else(|e| {
+            eprintln!("{e}");
+            exit(1);
+        });
         repl::run_repl(connection, table_mode);
         return;
     }
@@ -45,7 +48,10 @@ fn main() {
         QuerySource::Interactive => unreachable!(),
     };
 
-    let mut connection = database::initialize_connection(connection);
+    let mut connection = database::initialize_connection(connection).unwrap_or_else(|e| {
+        eprintln!("{e}");
+        exit(1);
+    });
     let batches = database::execute_query(&mut connection, &sql).unwrap_or_else(|e| {
         eprintln!("{e}");
         exit(1);
