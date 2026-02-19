@@ -56,8 +56,7 @@ impl Highlighter for SyntectHighlighter {
         let syntax = self
             .syntax_set
             .find_syntax_by_extension("sql")
-            .or_else(|| Some(self.syntax_set.find_syntax_plain_text()))
-            .unwrap();
+            .unwrap_or_else(|| self.syntax_set.find_syntax_plain_text());
 
         let mut highlighter = HighlightLines::new(syntax, &self.theme);
 
