@@ -55,11 +55,14 @@ pub fn run_repl(mut connection: impl Connection, table_mode: TableMode) {
         .with_highlighter(Box::new(SyntectHighlighter::new()))
         .with_validator(Box::new(SqlValidator));
     let prompt = SqlPrompt;
+    let mut ctrl_c_count: u8 = 0;
 
     loop {
         let signal = line_editor.read_line(&prompt);
         match signal {
             Ok(Signal::Success(buffer)) => {
+                ctrl_c_count = 0;
+
                 if buffer.trim().is_empty() {
                     continue;
                 }
@@ -76,7 +79,14 @@ pub fn run_repl(mut connection: impl Connection, table_mode: TableMode) {
                     eprintln!("Failed to print batches: {err}");
                 }
             }
-            Ok(Signal::CtrlD | Signal::CtrlC) => {
+            Ok(Signal::CtrlC) => {
+                if ctrl_c_count == 0 {
+                    ctrl_c_count = 1;
+                } else {
+                    break;
+                }
+            }
+            Ok(Signal::CtrlD) => {
                 break;
             }
             _ => {}
