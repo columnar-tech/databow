@@ -5,6 +5,10 @@ SPDX-License-Identifier: Apache-2.0
 
 # adbcli
 
+[![GitHub Release](https://img.shields.io/github/v/release/columnar-tech/adbcli)](https://github.com/columnar-tech/adbcli/releases)
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/columnar-tech/adbcli/ci.yaml)](https://github.com/columnar-tech/adbcli/actions/workflows/ci.yaml)
+[![GitHub License](https://img.shields.io/github/license/columnar-tech/adbcli?color=blue)](LICENSE)
+
 A command-line tool for querying databases via [ADBC](https://arrow.apache.org/adbc/current/index.html).
 
 ## Highlights
