@@ -1,7 +1,14 @@
 [package]
 name = "adbcli"
+description = "A command-line tool for querying databases via ADBC"
 version = "0.1.0-alpha"
 edition = "2024"
+license = "Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/columnar-tech/adbcli"
+keywords = ["database", "sql", "adbc"]
+categories = ["command-line-utilities", "database"]
+include = ["/src", "/themes", "build.rs", "LICENSE", "README.md"]
 
 [dependencies]
 adbc_core = "0.22.0"
