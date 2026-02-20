@@ -9,15 +9,19 @@ SPDX-License-Identifier: Apache-2.0
 
 # Installation
 
-Clone the repository and install the binary:
+## Cargo
+
+Install from [crates.io](https://crates.io/crates/adbcli):
+
+```sh
+cargo install adbcli --version 0.1.0-alpha
+```
+
+## Source
+
+Install from source:
 
 ```sh
 git clone https://github.com/columnar-tech/adbcli.git
-cargo install --path adbcli
-```
-
-Confirm the installation was successful:
-
-```sh
-adbcli --version
+cargo install --path .
 ```

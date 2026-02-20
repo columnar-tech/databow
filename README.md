@@ -22,7 +22,13 @@ A command-line tool for querying databases via [ADBC](https://arrow.apache.org/a
 
 ## Installation
 
-Clone the repository and install the binary:
+Install from [crates.io](https://crates.io/crates/adbcli):
+
+```sh
+cargo install adbcli --version 0.1.0-alpha
+```
+
+Install from source:
 
 ```sh
 git clone https://github.com/columnar-tech/adbcli.git
