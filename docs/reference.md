@@ -14,7 +14,7 @@ SPDX-License-Identifier: Apache-2.0
 Driver name
 
 ```sh
-adbcli --driver duckdb
+databow --driver duckdb
 ```
 
 ## --uri
@@ -22,7 +22,7 @@ adbcli --driver duckdb
 Database uniform resource identifier
 
 ```sh
-adbcli --driver mysql --uri root@tcp(localhost:33577)/test
+databow --driver mysql --uri root@tcp(localhost:33577)/test
 ```
 
 ## --username
@@ -30,7 +30,7 @@ adbcli --driver mysql --uri root@tcp(localhost:33577)/test
 Database user username
 
 ```sh
-adbcli --driver flightsql --uri grpc://localhost:9408 --username root
+databow --driver flightsql --uri grpc://localhost:9408 --username root
 ```
 
 ## --password
@@ -38,7 +38,7 @@ adbcli --driver flightsql --uri grpc://localhost:9408 --username root
 Database user password
 
 ```sh
-adbcli --driver flightsql --uri grpc://localhost:9408 --username root --password my_pwd
+databow --driver flightsql --uri grpc://localhost:9408 --username root --password my_pwd
 ```
 
 ## --option
@@ -46,7 +46,7 @@ adbcli --driver flightsql --uri grpc://localhost:9408 --username root --password
 Driver-specific database option
 
 ```sh
-adbcli --driver duckdb --option path=file.db
+databow --driver duckdb --option path=file.db
 ```
 
 ## --mode
@@ -71,7 +71,7 @@ Table display style
 | `nothing` | No borders or lines |
 
 ```sh
-adbcli --driver duckdb --mode ascii-markdown
+databow --driver duckdb --mode ascii-markdown
 ```
 
 ## --query
@@ -79,7 +79,7 @@ adbcli --driver duckdb --mode ascii-markdown
 Execute query and exit
 
 ```sh
-adbcli --driver duckdb --query "SELECT 42 AS the_answer"
+databow --driver duckdb --query "SELECT 42 AS the_answer"
 ```
 
 ## --file
@@ -87,7 +87,7 @@ adbcli --driver duckdb --query "SELECT 42 AS the_answer"
 Read and execute file and exit
 
 ```sh
-adbcli --driver duckdb --file select_example.sql
+databow --driver duckdb --file select_example.sql
 ```
 
 ## --output
@@ -95,7 +95,7 @@ adbcli --driver duckdb --file select_example.sql
 Write result to file
 
 ```sh
-adbcli --driver duckdb --query "SELECT 42 AS the_answer" --output result.json
+databow --driver duckdb --query "SELECT 42 AS the_answer" --output result.json
 ```
 
 The output format is inferred from the file extension:
@@ -111,7 +111,7 @@ The output format is inferred from the file extension:
 Print the help message
 
 ```sh
-adbcli --help
+databow --help
 ```
 
 ## --version
@@ -119,5 +119,5 @@ adbcli --help
 Print the version
 
 ```sh
-adbcli --version
+databow --version
 ```

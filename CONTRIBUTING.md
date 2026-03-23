@@ -5,11 +5,11 @@ SPDX-License-Identifier: Apache-2.0
 
 # Contributing
 
-All contributors are expected to follow the [Code of Conduct](https://github.com/columnar-tech/adbcli?tab=coc-ov-file#readme).
+All contributors are expected to follow the [Code of Conduct](https://github.com/columnar-tech/databow?tab=coc-ov-file#readme).
 
 ## Issues and Feature Requests
 
-Please file issues and feature requests on the GitHub issue tracker: https://github.com/columnar-tech/adbcli/issues
+Please file issues and feature requests on the GitHub issue tracker: https://github.com/columnar-tech/databow/issues
 
 Potential security vulnerabilities should be reported to [security@columnar.tech](mailto:security@columnar.tech) instead.
 
@@ -27,7 +27,7 @@ Build and run the binary:
 
 ```sh
 cargo build
-./target/debug/adbcli
+./target/debug/databow
 ```
 
 ## Pull Requests

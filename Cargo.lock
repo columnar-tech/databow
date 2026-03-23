@@ -40,25 +40,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "adbcli"
-version = "0.1.0-alpha"
-dependencies = [
- "adbc_core",
- "adbc_driver_manager",
- "arrow",
- "arrow-array",
- "arrow-cast",
- "arrow-schema",
- "clap",
- "comfy-table",
- "nu-ansi-term",
- "reedline",
- "syntect",
- "tempfile",
- "terminal-colorsaurus",
-]
-
-[[package]]
 name = "adler2"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -597,6 +578,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "704a3c26996a80471189265814dbc2c257598b96b8a7feae2d31ace646bb9782"
 dependencies = [
  "memchr",
+]
+
+[[package]]
+name = "databow"
+version = "0.1.0-alpha"
+dependencies = [
+ "adbc_core",
+ "adbc_driver_manager",
+ "arrow",
+ "arrow-array",
+ "arrow-cast",
+ "arrow-schema",
+ "clap",
+ "comfy-table",
+ "nu-ansi-term",
+ "reedline",
+ "syntect",
+ "tempfile",
+ "terminal-colorsaurus",
 ]
 
 [[package]]

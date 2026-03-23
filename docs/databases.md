@@ -9,7 +9,7 @@ SPDX-License-Identifier: Apache-2.0
 
 # Databases
 
-adbcli can connect to any database with a compatible ADBC driver.
+databow can connect to any database with a compatible ADBC driver.
 
 ## Amazon Redshift
 
@@ -22,7 +22,7 @@ dbc install redshift
 Connect to Amazon Redshift:
 
 ```sh
-adbcli --driver redshift --uri postgresql://localhost:5439 --option redshift.cluster_type=redshift-serverless --option redshift.workgroup_name=<WORKGROUP_NAME> --option redshift.db_name=sample_data_dev
+databow --driver redshift --uri postgresql://localhost:5439 --option redshift.cluster_type=redshift-serverless --option redshift.workgroup_name=<WORKGROUP_NAME> --option redshift.db_name=sample_data_dev
 ```
 
 ## Apache Doris
@@ -36,7 +36,7 @@ dbc install flightsql
 Connect to Apache Doris:
 
 ```sh
-adbcli --driver flightsql --uri grpc://localhost:8070 --username root
+databow --driver flightsql --uri grpc://localhost:8070 --username root
 ```
 
 ## BigQuery
@@ -50,7 +50,7 @@ dbc install bigquery
 Connect to BigQuery:
 
 ```sh
-adbcli --driver bigquery --option adbc.bigquery.sql.project_id=my-gcp-project --option adbc.bigquery.sql.dataset_id=bigquery-public-data
+databow --driver bigquery --option adbc.bigquery.sql.project_id=my-gcp-project --option adbc.bigquery.sql.dataset_id=bigquery-public-data
 ```
 
 ## Citus
@@ -64,7 +64,7 @@ dbc install postgresql
 Connect to Citus:
 
 ```sh
-adbcli --driver postgresql --uri postgresql://postgres:password@localhost:5432/postgres
+databow --driver postgresql --uri postgresql://postgres:password@localhost:5432/postgres
 ```
 
 ## Databricks
@@ -78,7 +78,7 @@ dbc install databricks
 Connect to Databricks:
 
 ```sh
-adbcli --driver databricks --uri databricks://token:<personal-access-token>@<server-hostname>:<port-number>/<http-path>
+databow --driver databricks --uri databricks://token:<personal-access-token>@<server-hostname>:<port-number>/<http-path>
 ```
 
 ## Dremio
@@ -92,7 +92,7 @@ dbc install flightsql
 Connect to Dremio:
 
 ```sh
-adbcli --driver flightsql --uri grpc+tcp://localhost:32010 --username admin --password password1
+databow --driver flightsql --uri grpc+tcp://localhost:32010 --username admin --password password1
 ```
 
 ## DuckDB
@@ -106,13 +106,13 @@ dbc install duckdb
 Connect to DuckDB (in-memory):
 
 ```sh
-adbcli --driver duckdb
+databow --driver duckdb
 ```
 
 Connect to DuckDB (persistent):
 
 ```sh
-adbcli --driver duckdb --option path=data.db
+databow --driver duckdb --option path=data.db
 ```
 
 ## GreptimeDB
@@ -126,7 +126,7 @@ dbc install mysql
 Connect to GreptimeDB:
 
 ```sh
-adbcli --driver mysql --uri 'root:@tcp(localhost:4002)/public'
+databow --driver mysql --uri 'root:@tcp(localhost:4002)/public'
 ```
 
 ## MariaDB
@@ -140,7 +140,7 @@ dbc install mysql
 Connect to MariaDB:
 
 ```sh
-adbcli --driver mysql --uri 'root:my-secret-pw@tcp(localhost:3306)/sys'
+databow --driver mysql --uri 'root:my-secret-pw@tcp(localhost:3306)/sys'
 ```
 
 ## Microsoft SQL Server
@@ -154,7 +154,7 @@ dbc install mssql
 Connect to Microsoft SQL Server:
 
 ```sh
-adbcli --driver mssql --uri sqlserver://sa:pwd@localhost:1433?database=demo
+databow --driver mssql --uri sqlserver://sa:pwd@localhost:1433?database=demo
 ```
 
 ## MotherDuck
@@ -168,7 +168,7 @@ dbc install duckdb
 Connect to MotherDuck:
 
 ```sh
-adbcli --driver duckdb --option path=md:sample_data
+databow --driver duckdb --option path=md:sample_data
 ```
 
 ## MySQL
@@ -182,7 +182,7 @@ dbc install mysql
 Connect to MySQL:
 
 ```sh
-adbcli --driver mysql --uri 'root:my-secret-pw@tcp(localhost:3306)/sys'
+databow --driver mysql --uri 'root:my-secret-pw@tcp(localhost:3306)/sys'
 ```
 
 ## Neon
@@ -196,7 +196,7 @@ dbc install postgresql
 Connect to Neon:
 
 ```sh
-adbcli --driver postgresql --uri postgresql://cloud_admin:cloud_admin@localhost:55433/postgres
+databow --driver postgresql --uri postgresql://cloud_admin:cloud_admin@localhost:55433/postgres
 ```
 
 ## OceanBase Database
@@ -210,7 +210,7 @@ dbc install mysql
 Connect to OceanBase Database:
 
 ```sh
-adbcli --driver mysql --uri 'root@tcp(localhost:2881)/oceanbase'
+databow --driver mysql --uri 'root@tcp(localhost:2881)/oceanbase'
 ```
 
 ## Oracle Database
@@ -224,7 +224,7 @@ dbc install oracle
 Connect to Oracle Database:
 
 ```sh
-adbcli --driver oracle --uri oracle://system:password@localhost:1521/FREEPDB1
+databow --driver oracle --uri oracle://system:password@localhost:1521/FREEPDB1
 ```
 
 ## ParadeDB
@@ -238,7 +238,7 @@ dbc install postgresql
 Connect to ParadeDB:
 
 ```sh
-adbcli --driver postgresql --uri postgresql://postgres:password@localhost:5432/postgres
+databow --driver postgresql --uri postgresql://postgres:password@localhost:5432/postgres
 ```
 
 ## PostgreSQL
@@ -252,7 +252,7 @@ dbc install postgresql
 Connect to PostgreSQL:
 
 ```sh
-adbcli --driver postgresql --uri postgresql://postgres:password@localhost:5432/postgres
+databow --driver postgresql --uri postgresql://postgres:password@localhost:5432/postgres
 ```
 
 ## SingleStore
@@ -266,7 +266,7 @@ dbc install mysql
 Connect to SingleStore:
 
 ```sh
-adbcli --driver mysql --uri 'root:YOUR_ROOT_PASSWORD@tcp(localhost:3306)/memsql'
+databow --driver mysql --uri 'root:YOUR_ROOT_PASSWORD@tcp(localhost:3306)/memsql'
 ```
 
 ## Snowflake
@@ -280,7 +280,7 @@ dbc install snowflake
 Connect to Snowflake:
 
 ```sh
-adbcli --driver snowflake --uri snowflake://user:pwd@myorg-account1/ANALYTICS_DB/SALES_DATA?warehouse=WH_XL&role=ANALYST
+databow --driver snowflake --uri snowflake://user:pwd@myorg-account1/ANALYTICS_DB/SALES_DATA?warehouse=WH_XL&role=ANALYST
 ```
 
 ## SQLite
@@ -294,13 +294,13 @@ dbc install sqlite
 Connect to SQLite (in-memory):
 
 ```sh
-adbcli --driver sqlite
+databow --driver sqlite
 ```
 
 Connect to SQLite (persistent):
 
 ```sh
-adbcli --driver sqlite --uri data.db
+databow --driver sqlite --uri data.db
 ```
 
 ## StarRocks
@@ -314,7 +314,7 @@ dbc install flightsql
 Connect to StarRocks:
 
 ```sh
-adbcli --driver flightsql --uri grpc://localhost:9408 --username root
+databow --driver flightsql --uri grpc://localhost:9408 --username root
 ```
 
 ## Teradata
@@ -328,7 +328,7 @@ dbc install teradata
 Connect to Teradata:
 
 ```sh
-adbcli --driver teradata --uri teradata://YOUR_USERNAME:YOUR_PASSWORD@YOUR_HOST:1025
+databow --driver teradata --uri teradata://YOUR_USERNAME:YOUR_PASSWORD@YOUR_HOST:1025
 ```
 
 ## TiDB
@@ -342,7 +342,7 @@ dbc install mysql
 Connect to TiDB:
 
 ```sh
-adbcli --driver mysql --uri 'root@tcp(localhost:4000)/test'
+databow --driver mysql --uri 'root@tcp(localhost:4000)/test'
 ```
 
 ## TimescaleDB
@@ -356,7 +356,7 @@ dbc install postgresql
 Connect to TimescaleDB:
 
 ```sh
-adbcli --driver postgresql --uri postgresql://postgres:password@localhost:5432/postgres
+databow --driver postgresql --uri postgresql://postgres:password@localhost:5432/postgres
 ```
 
 ## Trino
@@ -370,7 +370,7 @@ dbc install trino
 Connect to Trino:
 
 ```sh
-adbcli --driver postgresql --uri http://user@localhost:8080?catalog=tcph&schema=tiny
+databow --driver postgresql --uri http://user@localhost:8080?catalog=tcph&schema=tiny
 ```
 
 ## Vitess
@@ -384,7 +384,7 @@ dbc install mysql
 Connect to Vitess:
 
 ```sh
-adbcli --driver mysql --uri 'root@tcp(localhost:33577)/test'
+databow --driver mysql --uri 'root@tcp(localhost:33577)/test'
 ```
 
 ## Yellowbrick
@@ -398,7 +398,7 @@ dbc install postgresql
 Connect to Yellowbrick:
 
 ```sh
-adbcli --driver postgresql --uri postgresql://ybdadmin:ybdadmin@localhost:5432/yellowbrick
+databow --driver postgresql --uri postgresql://ybdadmin:ybdadmin@localhost:5432/yellowbrick
 ```
 
 ## YugabyteDB
@@ -412,5 +412,5 @@ dbc install postgresql
 Connect to YugabyteDB:
 
 ```sh
-adbcli --driver postgresql --uri postgresql://yugabyte@localhost:5433/yugabyte
+databow --driver postgresql --uri postgresql://yugabyte@localhost:5433/yugabyte
 ```

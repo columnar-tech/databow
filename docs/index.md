@@ -7,7 +7,7 @@ Copyright 2026 Columnar Technologies Inc.
 SPDX-License-Identifier: Apache-2.0
 -->
 
-# adbcli
+# databow
 
 A command-line tool for querying databases via [ADBC](https://arrow.apache.org/adbc/current/index.html).
 
@@ -30,7 +30,7 @@ dbc install duckdb
 
 !!! note
 
-    adbcli can be used to query [many different databases](databases.md).
+    databow can be used to query [many different databases](databases.md).
     This guide uses DuckDB for simplicity.
 
 ### Interactive Usage
@@ -38,7 +38,7 @@ dbc install duckdb
 Connect to DuckDB (in-memory):
 
 ```sh
-adbcli --driver duckdb
+databow --driver duckdb
 ```
 
 Execute SQL queries:
@@ -69,25 +69,25 @@ Execute SQL queries:
 Execute a query directly and exit:
 
 ```sh
-adbcli --driver duckdb --query "SELECT 42 AS the_answer"
+databow --driver duckdb --query "SELECT 42 AS the_answer"
 ```
 
 Execute a query from stdin and exit:
 
 ```sh
-echo "SELECT 42 AS the_answer" | adbcli --driver duckdb
+echo "SELECT 42 AS the_answer" | databow --driver duckdb
 ```
 
 Execute a query from a file and exit:
 
 ```sh
-adbcli --driver duckdb --file select_example.sql
+databow --driver duckdb --file select_example.sql
 ```
 
 Execute a query and output the result to a file:
 
 ```sh
-adbcli --driver duckdb --query "SELECT 42 AS the_answer" --output result.json
-adbcli --driver duckdb --query "SELECT 42 AS the_answer" --output result.csv
-adbcli --driver duckdb --query "SELECT 42 AS the_answer" --output result.arrow
+databow --driver duckdb --query "SELECT 42 AS the_answer" --output result.json
+databow --driver duckdb --query "SELECT 42 AS the_answer" --output result.csv
+databow --driver duckdb --query "SELECT 42 AS the_answer" --output result.arrow
 ```

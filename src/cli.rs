@@ -73,7 +73,7 @@ pub fn parse_args() -> AppConfig {
             .help("Write result to file")
             .value_name("file"),
     ];
-    let command = Command::new("adbcli")
+    let command = Command::new("databow")
         .version(env!("CARGO_PKG_VERSION"))
         .about("Query databases via ADBC")
         .arg_required_else_help(true)

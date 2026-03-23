@@ -1,5 +1,5 @@
 [project]
-name = "adbcli"
+name = "databow"
 version = "0.1.0-alpha"
 requires-python = ">=3.10"
 readme = "README.md"

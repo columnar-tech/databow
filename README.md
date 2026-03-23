@@ -3,11 +3,11 @@ Copyright 2026 Columnar Technologies Inc.
 SPDX-License-Identifier: Apache-2.0
 -->
 
-# adbcli
+# databow
 
-[![GitHub Release](https://img.shields.io/github/v/release/columnar-tech/adbcli)](https://github.com/columnar-tech/adbcli/releases)
-[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/columnar-tech/adbcli/ci.yaml)](https://github.com/columnar-tech/adbcli/actions/workflows/ci.yaml)
-[![GitHub License](https://img.shields.io/github/license/columnar-tech/adbcli?color=blue)](LICENSE)
+[![GitHub Release](https://img.shields.io/github/v/release/columnar-tech/databow)](https://github.com/columnar-tech/databow/releases)
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/columnar-tech/databow/ci.yaml)](https://github.com/columnar-tech/databow/actions/workflows/ci.yaml)
+[![GitHub License](https://img.shields.io/github/license/columnar-tech/databow?color=blue)](LICENSE)
 
 A command-line tool for querying databases via [ADBC](https://arrow.apache.org/adbc/current/index.html).
 
@@ -22,17 +22,17 @@ A command-line tool for querying databases via [ADBC](https://arrow.apache.org/a
 
 ## Installation
 
-Install from [crates.io](https://crates.io/crates/adbcli):
+Install from [crates.io](https://crates.io/crates/databow):
 
 ```sh
-cargo install adbcli --version 0.1.0-alpha
+cargo install databow --version 0.1.0-alpha
 ```
 
 Install from source:
 
 ```sh
-git clone https://github.com/columnar-tech/adbcli.git
-cargo install --path adbcli
+git clone https://github.com/columnar-tech/databow.git
+cargo install --path databow
 ```
 
 ## Getting Started
@@ -48,7 +48,7 @@ dbc install duckdb
 Connect to DuckDB (in-memory):
 
 ```sh
-adbcli --driver duckdb
+databow --driver duckdb
 ```
 
 Execute SQL queries:
@@ -79,36 +79,36 @@ Execute SQL queries:
 Execute a query directly and exit:
 
 ```sh
-adbcli --driver duckdb --query "SELECT 42 AS the_answer"
+databow --driver duckdb --query "SELECT 42 AS the_answer"
 ```
 
 Execute a query from stdin and exit:
 
 ```sh
-echo "SELECT 42 AS the_answer" | adbcli --driver duckdb
+echo "SELECT 42 AS the_answer" | databow --driver duckdb
 ```
 
 Execute a query from a file and exit:
 
 ```sh
-adbcli --driver duckdb --file select_example.sql
+databow --driver duckdb --file select_example.sql
 ```
 
 Execute a query and output the result to a file:
 
 ```sh
-adbcli --driver duckdb --query "SELECT 42 AS the_answer" --output result.json
-adbcli --driver duckdb --query "SELECT 42 AS the_answer" --output result.csv
-adbcli --driver duckdb --query "SELECT 42 AS the_answer" --output result.arrow
+databow --driver duckdb --query "SELECT 42 AS the_answer" --output result.json
+databow --driver duckdb --query "SELECT 42 AS the_answer" --output result.csv
+databow --driver duckdb --query "SELECT 42 AS the_answer" --output result.arrow
 ```
 
 ## Reference
 
 ```console
-$ adbcli --help
+$ databow --help
 Query databases via ADBC
 
-Usage: adbcli [OPTIONS] --driver <driver>
+Usage: databow [OPTIONS] --driver <driver>
 
 Options:
       --driver <driver>      Driver name

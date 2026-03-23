@@ -1,5 +1,5 @@
 [project]
-site_name = "adbcli"
+site_name = "databow"
 site_description = "A command-line tool for querying databases via ADBC."
 copyright = "Copyright &copy; 2026 Columnar Technologies Inc."
 nav = [
