@@ -2,6 +2,7 @@
 site_name = "databow"
 site_description = "A command-line tool for querying databases via ADBC."
 copyright = "Copyright &copy; 2026 Columnar Technologies Inc."
+repo_url = "https://github.com/columnar-tech/databow"
 nav = [
     { "Getting Started" = "index.md" },
     { "Installation" = "installation.md" },
