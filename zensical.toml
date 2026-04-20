@@ -2,6 +2,7 @@
 site_name = "databow"
 site_description = "A command-line tool for querying databases via ADBC."
 copyright = "Copyright &copy; 2026 Columnar Technologies Inc."
+repo_name = "databow"
 repo_url = "https://github.com/columnar-tech/databow"
 nav = [
     { "Getting Started" = "index.md" },
@@ -46,6 +47,7 @@ toggle.name = "Switch to light mode"
 
 [project.theme.icon]
 logo = "lucide/database"
+repo = "fontawesome/brands/github"
 
 [[project.extra.social]]
 icon = "fontawesome/brands/github"
