@@ -11,18 +11,18 @@ categories = ["command-line-utilities", "database"]
 include = ["/src", "/themes", "build.rs", "LICENSE", "README.md"]
 
 [dependencies]
-adbc_core = "0.22.0"
-adbc_driver_manager = "0.22.0"
-arrow = "57.2.0"
-arrow-array = "57.2.0"
-arrow-cast = "57.2.0"
-arrow-schema = "57.2.0"
-clap = { version = "4.5.54", features = ["derive"] }
+adbc_core = "0.23.0"
+adbc_driver_manager = "0.23.0"
+arrow = "58.1.0"
+arrow-array = "58.1.0"
+arrow-cast = "58.1.0"
+arrow-schema = "58.1.0"
+clap = { version = "4.6.1", features = ["derive"] }
 comfy-table = "7.2.2"
 nu-ansi-term = "0.50.3"
-reedline = "0.45.0"
+reedline = "0.47.0"
 syntect = "5.3.0"
 terminal-colorsaurus = "1.0.3"
 
 [dev-dependencies]
-tempfile = "3.14.0"
+tempfile = "3.27.0"
