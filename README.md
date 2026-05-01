@@ -5,7 +5,8 @@ SPDX-License-Identifier: Apache-2.0
 
 # databow
 
-[![databow](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/columnar-tech/databow/main/docs/assets/badge.json)](https://docs.columnar.tech/databow/)
+[![databow](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fcolumnar-tech%2Fdatabow%2Fmain%2Fdocs%2Fassets%2Fbadge.json
+)](https://docs.columnar.tech/databow/)
 [![GitHub Release](https://img.shields.io/github/v/release/columnar-tech/databow)](https://github.com/columnar-tech/databow/releases)
 [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/columnar-tech/databow/ci.yaml)](https://github.com/columnar-tech/databow/actions/workflows/ci.yaml)
 [![GitHub License](https://img.shields.io/github/license/columnar-tech/databow?color=blue)](LICENSE)
