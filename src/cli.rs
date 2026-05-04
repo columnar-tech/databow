@@ -14,16 +14,26 @@ pub enum QuerySource {
     Interactive,
 }
 
-pub struct ConnectionConfig {
-    pub driver_name: String,
-    pub uri: Option<String>,
-    pub username: Option<String>,
-    pub password: Option<String>,
-    pub options: Vec<(String, String)>,
+#[derive(Debug, Clone)]
+pub enum ConnectionSource {
+    Direct {
+        driver_name: String,
+        uri: Option<String>,
+        username: Option<String>,
+        password: Option<String>,
+        options: Vec<(String, String)>,
+    },
+    Profile {
+        profile: String,
+        uri: Option<String>,
+        username: Option<String>,
+        password: Option<String>,
+        options: Vec<(String, String)>,
+    },
 }
 
 pub struct AppConfig {
-    pub connection: ConnectionConfig,
+    pub connection: ConnectionSource,
     pub query_source: QuerySource,
     pub table_mode: TableMode,
     pub output_path: Option<PathBuf>,
@@ -36,10 +46,13 @@ fn is_stdin_piped() -> bool {
 
 pub fn parse_args() -> AppConfig {
     let arguments = [
+        Arg::new("profile")
+            .long("profile")
+            .help("Connection profile name or path")
+            .conflicts_with("driver"),
         Arg::new("driver")
             .long("driver")
-            .help("Driver name")
-            .required(true),
+            .help("Driver name (required if --profile not specified)"),
         Arg::new("uri")
             .long("uri")
             .help("Database uniform resource identifier"),
@@ -80,13 +93,8 @@ pub fn parse_args() -> AppConfig {
         .args(arguments);
     let matches = command.get_matches();
 
-    let driver_name = if let Some(name) = matches.get_one::<String>("driver") {
-        name.clone()
-    } else {
-        eprintln!("Driver name is required");
-        exit(1);
-    };
-
+    let profile = matches.get_one::<String>("profile").cloned();
+    let driver_name = matches.get_one::<String>("driver").cloned();
     let uri = matches.get_one::<String>("uri").cloned();
     let username = matches.get_one::<String>("username").cloned();
     let password = matches.get_one::<String>("password").cloned();
@@ -103,6 +111,28 @@ pub fn parse_args() -> AppConfig {
             }
         }
     }
+
+    // Build ConnectionSource based on whether --profile or --driver was provided
+    let connection = if let Some(profile) = profile {
+        ConnectionSource::Profile {
+            profile,
+            uri,
+            username,
+            password,
+            options,
+        }
+    } else if let Some(driver_name) = driver_name {
+        ConnectionSource::Direct {
+            driver_name,
+            uri,
+            username,
+            password,
+            options,
+        }
+    } else {
+        eprintln!("Error: Either --profile or --driver is required");
+        exit(1);
+    };
 
     let query_source = if let Some(query) = matches.get_one::<String>("query") {
         QuerySource::Query(query.clone())
@@ -126,13 +156,7 @@ pub fn parse_args() -> AppConfig {
     }
 
     AppConfig {
-        connection: ConnectionConfig {
-            driver_name,
-            uri,
-            username,
-            password,
-            options,
-        },
+        connection,
         query_source,
         table_mode,
         output_path,
@@ -156,6 +180,61 @@ fn parse_option(option: &str) -> Result<(String, String), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_connection_source_direct() {
+        let source = ConnectionSource::Direct {
+            driver_name: "duckdb".to_string(),
+            uri: Some(":memory:".to_string()),
+            username: None,
+            password: None,
+            options: vec![],
+        };
+        match source {
+            ConnectionSource::Direct { driver_name, .. } => {
+                assert_eq!(driver_name, "duckdb");
+            }
+            _ => panic!("Expected Direct variant"),
+        }
+    }
+
+    #[test]
+    fn test_connection_source_profile() {
+        let source = ConnectionSource::Profile {
+            profile: "my_profile".to_string(),
+            uri: Some("override_uri".to_string()),
+            username: None,
+            password: None,
+            options: vec![],
+        };
+        match source {
+            ConnectionSource::Profile { profile, uri, .. } => {
+                assert_eq!(profile, "my_profile");
+                assert_eq!(uri, Some("override_uri".to_string()));
+            }
+            _ => panic!("Expected Profile variant"),
+        }
+    }
+
+    #[test]
+    fn test_connection_source_profile_with_path() {
+        let source = ConnectionSource::Profile {
+            profile: "/path/to/profile.toml".to_string(),
+            uri: None,
+            username: None,
+            password: None,
+            options: vec![("key".to_string(), "value".to_string())],
+        };
+        match source {
+            ConnectionSource::Profile {
+                profile, options, ..
+            } => {
+                assert_eq!(profile, "/path/to/profile.toml");
+                assert_eq!(options.len(), 1);
+            }
+            _ => panic!("Expected Profile variant"),
+        }
+    }
 
     #[test]
     fn test_parse_option_valid() {
@@ -190,9 +269,9 @@ mod tests {
     }
 
     #[test]
-    fn test_app_config_creation() {
+    fn test_app_config_with_direct_connection() {
         let config = AppConfig {
-            connection: ConnectionConfig {
+            connection: ConnectionSource::Direct {
                 driver_name: "test_driver".to_string(),
                 uri: Some("test_uri".to_string()),
                 username: Some("test_user".to_string()),
@@ -204,22 +283,30 @@ mod tests {
             output_path: None,
         };
 
-        assert_eq!(config.connection.driver_name, "test_driver");
-        assert_eq!(config.connection.uri, Some("test_uri".to_string()));
-        assert_eq!(config.connection.username, Some("test_user".to_string()));
-        assert_eq!(config.connection.password, Some("test_pass".to_string()));
-        assert_eq!(config.connection.options.len(), 1);
-        assert_eq!(
-            config.connection.options[0],
-            ("key1".to_string(), "val1".to_string())
-        );
+        match &config.connection {
+            ConnectionSource::Direct {
+                driver_name,
+                uri,
+                username,
+                password,
+                options,
+            } => {
+                assert_eq!(driver_name, "test_driver");
+                assert_eq!(*uri, Some("test_uri".to_string()));
+                assert_eq!(*username, Some("test_user".to_string()));
+                assert_eq!(*password, Some("test_pass".to_string()));
+                assert_eq!(options.len(), 1);
+                assert_eq!(options[0], ("key1".to_string(), "val1".to_string()));
+            }
+            _ => panic!("Expected Direct variant"),
+        }
     }
 
     #[test]
-    fn test_app_config_with_none_fields() {
+    fn test_app_config_with_profile_connection() {
         let config = AppConfig {
-            connection: ConnectionConfig {
-                driver_name: "test_driver".to_string(),
+            connection: ConnectionSource::Profile {
+                profile: "my_postgres".to_string(),
                 uri: None,
                 username: None,
                 password: None,
@@ -230,29 +317,45 @@ mod tests {
             output_path: None,
         };
 
-        assert_eq!(config.connection.driver_name, "test_driver");
-        assert_eq!(config.connection.uri, None);
-        assert_eq!(config.connection.username, None);
-        assert_eq!(config.connection.password, None);
-        assert!(config.connection.options.is_empty());
+        match &config.connection {
+            ConnectionSource::Profile { profile, .. } => {
+                assert_eq!(profile, "my_postgres");
+            }
+            _ => panic!("Expected Profile variant"),
+        }
         assert_eq!(config.table_mode, TableMode::AsciiMarkdown);
     }
 
     #[test]
-    fn test_app_config_with_output_path() {
+    fn test_app_config_with_profile_and_overrides() {
         let config = AppConfig {
-            connection: ConnectionConfig {
-                driver_name: "test_driver".to_string(),
-                uri: None,
-                username: None,
+            connection: ConnectionSource::Profile {
+                profile: "/path/to/config.toml".to_string(),
+                uri: Some("override://uri".to_string()),
+                username: Some("override_user".to_string()),
                 password: None,
-                options: vec![],
+                options: vec![("extra".to_string(), "option".to_string())],
             },
             query_source: QuerySource::Query("SELECT 1".to_string()),
             table_mode: TableMode::default(),
             output_path: Some(PathBuf::from("output.json")),
         };
 
+        match &config.connection {
+            ConnectionSource::Profile {
+                profile,
+                uri,
+                username,
+                options,
+                ..
+            } => {
+                assert_eq!(profile, "/path/to/config.toml");
+                assert_eq!(*uri, Some("override://uri".to_string()));
+                assert_eq!(*username, Some("override_user".to_string()));
+                assert_eq!(options.len(), 1);
+            }
+            _ => panic!("Expected Profile variant"),
+        }
         assert_eq!(config.output_path, Some(PathBuf::from("output.json")));
     }
 }

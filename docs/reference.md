@@ -9,6 +9,14 @@ SPDX-License-Identifier: Apache-2.0
 
 # Reference
 
+## --profile
+
+Connection profile name or path
+
+```sh
+databow --profile warehouse
+```
+
 ## --driver
 
 Driver name

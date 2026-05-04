@@ -110,10 +110,11 @@ databow --driver duckdb --query "SELECT 42 AS the_answer" --output result.arrow
 $ databow --help
 Query databases via ADBC
 
-Usage: databow [OPTIONS] --driver <driver>
+Usage: databow [OPTIONS]
 
 Options:
-      --driver <driver>      Driver name
+      --profile <profile>    Connection profile name or path
+      --driver <driver>      Driver name (required if --profile not specified)
       --uri <uri>            Database uniform resource identifier
       --username <username>  Database user username
       --password <password>  Database user password
