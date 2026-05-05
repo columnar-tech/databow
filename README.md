@@ -13,6 +13,8 @@ SPDX-License-Identifier: Apache-2.0
 
 A command-line tool for querying databases via [ADBC](https://arrow.apache.org/adbc/current/index.html).
 
+<img alt="databow demo" src="docs/assets/demo.gif" width="600" />
+
 ## Highlights
 
 - **Multi-database support** - Connect to any database with a compatible ADBC driver
