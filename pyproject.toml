@@ -1,11 +1,22 @@
 [project]
 name = "databow"
+description = "A command-line tool for querying databases."
 version = "0.1.0-alpha"
 requires-python = ">=3.10"
 readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
+authors = [{ name = "Emil Sadek", email = "emil@columnar.tech" }]
+keywords = ["database", "sql", "adbc", "arrow", "cli"]
+
+[project.urls]
+Documentation = "https://docs.columnar.tech/databow"
+Repository = "https://github.com/columnar-tech/databow"
 
 [build-system]
 requires = ["maturin>=1.0,<2.0"]
 build-backend = "maturin"
+
+[tool.maturin]
+bindings = "bin"
+strip = true
