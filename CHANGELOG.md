@@ -1,4 +1,4 @@
-## [unreleased]
+## [0.1.0-beta] - 2026-05-07
 
 ### 🚀 Features
 
@@ -25,6 +25,7 @@
 - Extend python configuration
 - Add pypi workflow
 - Remove vscode config
+- Bump version to 0.1.0-beta
 ## [0.1.0-alpha] - 2026-02-20
 
 ### 🚀 Features
