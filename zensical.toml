@@ -5,8 +5,9 @@ copyright = "Copyright &copy; 2026 Columnar Technologies Inc."
 repo_name = "databow"
 repo_url = "https://github.com/columnar-tech/databow"
 nav = [
-    { "Getting Started" = "index.md" },
+    { "Overview" = "index.md" },
     { "Installation" = "installation.md" },
+    { "Tutorial" = "tutorial.md" },
     { "Databases" = "databases.md" },
     { "Reference" = "reference.md" },
 ]
