@@ -29,7 +29,7 @@ A command-line tool for querying databases via [ADBC](https://arrow.apache.org/a
 Install from [crates.io](https://crates.io/crates/databow):
 
 ```sh
-cargo install databow --version 0.1.0-alpha
+cargo install databow --version 0.1.0-beta
 ```
 
 Install from source:

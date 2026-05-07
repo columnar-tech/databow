@@ -14,7 +14,7 @@ SPDX-License-Identifier: Apache-2.0
 Install from [crates.io](https://crates.io/crates/databow):
 
 ```sh
-cargo install databow --version 0.1.0-alpha
+cargo install databow --version 0.1.0-beta
 ```
 
 ## Source

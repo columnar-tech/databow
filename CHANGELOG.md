@@ -1,3 +1,30 @@
+## [unreleased]
+
+### 🚀 Features
+
+- Add connection profile support
+
+### 📚 Documentation
+
+- Add crates.io installation instructions
+- Add repository url
+- Set repo name and icon
+- Rename images directory
+- Add databow badge
+- Fix databow badge url
+- Add demo gif
+- Add tutorial page
+
+### ⚙️ Miscellaneous Tasks
+
+- Add badges
+- Rename project
+- Add workflow for docs deployment
+- Upgrade dependencies
+- Upgrade rust toolchain channel
+- Extend python configuration
+- Add pypi workflow
+- Remove vscode config
 ## [0.1.0-alpha] - 2026-02-20
 
 ### 🚀 Features
@@ -56,3 +83,4 @@
 - Add pyproject.toml file
 - Fix clippy pedantic errors
 - Add package metadata
+- Add changelog
