@@ -20,3 +20,6 @@ build-backend = "maturin"
 [tool.maturin]
 bindings = "bin"
 strip = true
+
+[tool.maturin.generate-ci.github]
+trusted-publishing = true
