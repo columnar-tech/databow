@@ -26,17 +26,16 @@ A command-line tool for querying databases via [ADBC](https://arrow.apache.org/a
 
 ## Installation
 
-Install from [crates.io](https://crates.io/crates/databow):
+Install with [uv](https://docs.astral.sh/uv/):
+
+```sh
+uv tool install databow
+```
+
+Install with [Cargo](https://doc.rust-lang.org/cargo/):
 
 ```sh
 cargo install databow --version 0.1.0-beta.2
-```
-
-Install from source:
-
-```sh
-git clone https://github.com/columnar-tech/databow.git
-cargo install --path databow
 ```
 
 ## Getting Started
