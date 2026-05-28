@@ -40,7 +40,7 @@ pip install databow
 Install from [crates.io](https://crates.io/crates/databow):
 
 ```sh
-cargo install databow --version 0.1.0-beta.2
+cargo install databow
 ```
 
 ## Source

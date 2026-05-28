@@ -35,7 +35,7 @@ uv tool install databow
 Install with [Cargo](https://doc.rust-lang.org/cargo/):
 
 ```sh
-cargo install databow --version 0.1.0-beta.2
+cargo install databow
 ```
 
 ## Getting Started
