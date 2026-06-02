@@ -69,7 +69,7 @@ databow --driver postgresql --uri postgresql://postgres:password@localhost:5432/
 
 ## Databricks
 
-Install the PostgreSQL driver with dbc:
+Install the Databricks driver with dbc:
 
 ```sh
 dbc install databricks
@@ -370,7 +370,7 @@ dbc install trino
 Connect to Trino:
 
 ```sh
-databow --driver postgresql --uri http://user@localhost:8080?catalog=tcph&schema=tiny
+databow --driver trino --uri 'https://user@localhost?catalog=tcph&schema=tiny'
 ```
 
 ## Vitess
