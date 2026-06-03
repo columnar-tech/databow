@@ -17,6 +17,7 @@ language = "en"
 logo = "assets/logo.svg"
 favicon = "assets/logo.svg"
 font = false
+custom_dir = "overrides"
 features = [
     "announce.dismiss",
     "content.code.annotate",
