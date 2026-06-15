@@ -325,3 +325,31 @@ uri = ":memory:"
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(stdout.contains("profile_options_test"));
 }
+
+#[test]
+fn test_timestamp_with_time_zone() {
+    let output = Command::new("cargo")
+        .args([
+            "run",
+            "--",
+            "--driver",
+            "duckdb",
+            "--query",
+            "SET TimeZone = 'America/Los_Angeles'; SELECT TIMESTAMPTZ '1992-09-20 12:30:00.123456789+01:00'",
+        ])
+        .output()
+        .expect("Failed to execute command");
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        output.status.success(),
+        "TIMESTAMPTZ query should succeed. stderr: {}",
+        stderr
+    );
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(
+        stdout.contains("1992-09-20T04:30:00.123456-07:00"),
+        "expected session-zone-rendered TIMESTAMPTZ in output. stdout: {}",
+        stdout
+    );
+}
