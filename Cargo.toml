@@ -13,7 +13,7 @@ include = ["/src", "/themes", "build.rs", "LICENSE", "README.md"]
 [dependencies]
 adbc_core = "0.23.0"
 adbc_driver_manager = "0.23.0"
-arrow = "58.1.0"
+arrow = { version = "58.1.0", features = ["chrono-tz"] }
 arrow-array = "58.1.0"
 arrow-cast = "58.1.0"
 arrow-schema = "58.1.0"
