@@ -25,6 +25,20 @@ Connect to Amazon Redshift:
 databow --driver redshift --uri postgresql://localhost:5439 --option redshift.cluster_type=redshift-serverless --option redshift.workgroup_name=<WORKGROUP_NAME> --option redshift.db_name=sample_data_dev
 ```
 
+## Apache DataFusion
+
+Install the Apache DataFusion driver with dbc:
+
+```sh
+dbc install datafusion
+```
+
+Connect to Apache DataFusion:
+
+```sh
+databow --driver datafusion
+```
+
 ## Apache Doris
 
 Install the Arrow Flight SQL driver with dbc:
@@ -37,6 +51,20 @@ Connect to Apache Doris:
 
 ```sh
 databow --driver flightsql --uri grpc://localhost:8070 --username root
+```
+
+## Apache Spark
+
+Install the Apache Spark driver with dbc:
+
+```sh
+dbc install --pre spark
+```
+
+Connect to Apache Spark:
+
+```sh
+databow --driver spark --uri "spark://admin@localhost:15002?auth_type=none&api=connect"
 ```
 
 ## BigQuery
@@ -65,6 +93,20 @@ Connect to Citus:
 
 ```sh
 databow --driver postgresql --uri postgresql://postgres:password@localhost:5432/postgres
+```
+
+## ClickHouse
+
+Install the ClickHouse driver with dbc:
+
+```sh
+dbc install --pre clickhouse
+```
+
+Connect to ClickHouse:
+
+```sh
+databow --driver clickhouse --uri http://localhost:8123 --username user --password pass
 ```
 
 ## Databricks
