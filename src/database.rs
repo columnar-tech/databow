@@ -5,7 +5,7 @@ use crate::cli::ConnectionSource;
 use adbc_core::options::{AdbcVersion, OptionDatabase, OptionValue};
 use adbc_core::{Database, Driver, LOAD_FLAG_DEFAULT, Statement};
 use adbc_driver_manager::profile::{
-    ConnectionProfile, ConnectionProfileProvider, FilesystemProfileProvider,
+    ConnectionProfile, ConnectionProfileProvider, FilesystemProfileProvider, process_profile_value,
 };
 use adbc_driver_manager::{ManagedConnection, ManagedDriver};
 use arrow_array::RecordBatch;
@@ -104,8 +104,9 @@ fn initialize_profile_connection(
         .map_err(|e| format!("Failed to load driver '{}': {}", driver_name, e))?
     };
 
-    // Collect profile options
-    let profile_options: Vec<_> = profile
+    // Collect profile options, applying ADBC `{{ env_var(NAME) }}` substitution
+    // on string values (matches the driver manager's `DriverLocator::Profile` path).
+    let profile_options: Vec<(OptionDatabase, OptionValue)> = profile
         .get_options()
         .map_err(|e| {
             format!(
@@ -114,7 +115,20 @@ fn initialize_profile_connection(
             )
         })?
         .into_iter()
-        .collect();
+        .map(|(k, v)| -> Result<(OptionDatabase, OptionValue), String> {
+            if let OptionValue::String(s) = v {
+                let result = process_profile_value(&s).map_err(|e| {
+                    format!(
+                        "Failed to substitute env vars in profile '{}': {}",
+                        profile_name, e
+                    )
+                })?;
+                Ok((k, result))
+            } else {
+                Ok((k, v))
+            }
+        })
+        .collect::<Result<Vec<_>, _>>()?;
 
     // Build override options from CLI (these take precedence)
     let override_options = build_database_options(

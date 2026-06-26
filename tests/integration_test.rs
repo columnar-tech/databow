@@ -327,6 +327,62 @@ uri = ":memory:"
 }
 
 #[test]
+fn test_profile_env_var_substitution() {
+    use std::io::Write;
+
+    // Profile options containing `{{ env_var(NAME) }}` must be expanded against
+    // the process environment when the profile is loaded (per the ADBC connection-profile spec).
+    let tmp_dir = tempfile::tempdir().expect("create tempdir");
+    let canary = "databow_env_var_substitution_canary";
+    let expanded_db_path = tmp_dir.path().join(format!("{canary}.duckdb"));
+    let literal_db_path = tmp_dir
+        .path()
+        .join("{{ env_var(DATABOW_TEST_CANARY) }}.duckdb");
+
+    let mut profile_file = NamedTempFile::with_suffix(".toml").expect("create profile temp file");
+    let profile_path = profile_file.path().to_string_lossy().to_string();
+    let uri_template = format!(
+        "{}/{{{{ env_var(DATABOW_TEST_CANARY) }}}}.duckdb",
+        tmp_dir.path().display()
+    );
+    let profile_contents = format!(
+        "profile_version = 1\ndriver = \"duckdb\"\n\n[Options]\nuri = \"{uri_template}\"\n"
+    );
+    profile_file
+        .write_all(profile_contents.as_bytes())
+        .expect("write profile");
+
+    let output = Command::new("cargo")
+        .args([
+            "run",
+            "--",
+            "--profile",
+            &profile_path,
+            "--query",
+            "SELECT 'env_var_substituted' AS result",
+        ])
+        .env("DATABOW_TEST_CANARY", canary)
+        .output()
+        .expect("Failed to execute command");
+
+    assert!(
+        output.status.success(),
+        "expected query to succeed after env_var substitution. stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(
+        expanded_db_path.exists(),
+        "expected DuckDB to have created the substituted path {:?}, but it does not exist; profile substitution did not occur",
+        expanded_db_path
+    );
+    assert!(
+        !literal_db_path.exists(),
+        "unexpected: DuckDB created the literal-template path {:?}, which means env_var substitution did not happen",
+        literal_db_path
+    );
+}
+
+#[test]
 fn test_timestamp_with_time_zone() {
     let output = Command::new("cargo")
         .args([
