@@ -3,6 +3,9 @@
 ### ⚙️ Miscellaneous Tasks
 
 - Trigger releases on GitHub Release published
+- Update changelog [skip ci]
+- Prevent changelog workflow loop without [skip ci]
+- Allow workflow_dispatch to publish to PyPI
 ## [0.1.1] - 2026-06-29
 
 ### 🐛 Bug Fixes
