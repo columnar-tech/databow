@@ -16,6 +16,7 @@ jobs:
   changelog:
     name: Generate changelog
     runs-on: ubuntu-latest
+    if: github.actor != 'github-actions[bot]'
     permissions:
       contents: write
     steps:
@@ -40,5 +41,5 @@ jobs:
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           set +e
           git add CHANGELOG.md
-          git commit -m "chore: update changelog [skip ci]"
+          git commit -m "chore: update changelog"
           git push https://${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git main
