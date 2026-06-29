@@ -1,3 +1,39 @@
+## [unreleased]
+
+### 🐛 Bug Fixes
+
+- Render timestamp with time zone data
+
+### 📚 Documentation
+
+- Fix database driver examples (#7)
+- Add datafusion, spark, and clickhouse examples (#13)
+
+### ⚙️ Miscellaneous Tasks
+
+- Add workflow to auto-update changelog via git-cliff
+## [0.1.0] - 2026-05-28
+
+### 📚 Documentation
+
+- Update installation guide
+- Update demo gif url
+
+### ⚙️ Miscellaneous Tasks
+
+- Bump version
+## [0.1.0-beta.2] - 2026-05-08
+
+### ⚙️ Miscellaneous Tasks
+
+- Use trusted publishing for PyPI releases
+## [0.1.0-beta.1] - 2026-05-07
+
+### ⚙️ Miscellaneous Tasks
+
+- Update changelog
+- Enable trusted publishing
+- Bump version to 0.1.0-beta.1
 ## [0.1.0-beta] - 2026-05-07
 
 ### 🚀 Features
