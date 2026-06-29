@@ -1,5 +1,10 @@
 ## [unreleased]
 
+### ⚙️ Miscellaneous Tasks
+
+- Trigger releases on GitHub Release published
+## [0.1.1] - 2026-06-29
+
 ### 🐛 Bug Fixes
 
 - Render timestamp with time zone data
@@ -15,6 +20,7 @@
 - Update changelog [skip ci]
 - Add crates.io release workflow
 - Bump version to 0.1.1
+- Update changelog [skip ci]
 ## [0.1.0] - 2026-05-28
 
 ### 📚 Documentation
