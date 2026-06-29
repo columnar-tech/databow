@@ -12,6 +12,9 @@
 ### ⚙️ Miscellaneous Tasks
 
 - Add workflow to auto-update changelog via git-cliff
+- Update changelog [skip ci]
+- Add crates.io release workflow
+- Bump version to 0.1.1
 ## [0.1.0] - 2026-05-28
 
 ### 📚 Documentation
