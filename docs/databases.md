@@ -157,6 +157,20 @@ Connect to DuckDB (persistent):
 databow --driver duckdb --option path=data.db
 ```
 
+## GizmoSQL
+
+Install the Arrow Flight SQL driver with dbc:
+
+```sh
+dbc install flightsql
+```
+
+Connect to GizmoSQL:
+
+```sh
+databow --driver flightsql --uri grpc+tcp://localhost:31337 --username gizmosql_user --password gizmosql_password
+```
+
 ## GreptimeDB
 
 Install the MySQL driver with dbc:
