@@ -11,6 +11,8 @@
 - Prevent changelog workflow loop without [skip ci]
 - Allow workflow_dispatch to publish to PyPI
 - Update changelog
+- Update changelog
+- Add workflow_dispatch trigger and concurrency to docs deploy
 ## [0.1.1] - 2026-06-29
 
 ### 🐛 Bug Fixes
