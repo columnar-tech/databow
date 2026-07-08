@@ -15,6 +15,8 @@
 - Allow workflow_dispatch to publish to PyPI
 - Add workflow_dispatch trigger and concurrency to docs deploy
 - Run workflow on pull requests
+- Skip changelog-update commits in git-cliff config
+- Add missing license header
 ## [0.1.1] - 2026-06-29
 
 ### 🐛 Bug Fixes
