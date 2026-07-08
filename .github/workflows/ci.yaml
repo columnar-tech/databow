@@ -2,7 +2,10 @@
 # SPDX-License-Identifier: Apache-2.0
 
 name: continuous-integration
-on: [push]
+on:
+  push:
+    branches: [main]
+  pull_request:
 jobs:
   ci:
     runs-on: ubuntu-latest
