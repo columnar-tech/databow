@@ -1,5 +1,9 @@
 ## [unreleased]
 
+### 🐛 Bug Fixes
+
+- Expand env_var substitution in profile option values (#20)
+
 ### 📚 Documentation
 
 - Add GizmoSQL setup instructions to database documentation (#24)
@@ -13,6 +17,7 @@
 - Update changelog
 - Update changelog
 - Add workflow_dispatch trigger and concurrency to docs deploy
+- Update changelog
 ## [0.1.1] - 2026-06-29
 
 ### 🐛 Bug Fixes
