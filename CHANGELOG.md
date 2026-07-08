@@ -17,6 +17,7 @@
 - Run workflow on pull requests
 - Skip changelog-update commits in git-cliff config
 - Add missing license header
+- Bump version to 0.1.2
 ## [0.1.1] - 2026-06-29
 
 ### 🐛 Bug Fixes
