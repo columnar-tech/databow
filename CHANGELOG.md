@@ -18,6 +18,8 @@
 - Update changelog
 - Add workflow_dispatch trigger and concurrency to docs deploy
 - Update changelog
+- Update changelog
+- Run workflow on pull requests
 ## [0.1.1] - 2026-06-29
 
 ### 🐛 Bug Fixes
