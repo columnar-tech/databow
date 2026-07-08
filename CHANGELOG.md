@@ -11,14 +11,9 @@
 ### ⚙️ Miscellaneous Tasks
 
 - Trigger releases on GitHub Release published
-- Update changelog [skip ci]
 - Prevent changelog workflow loop without [skip ci]
 - Allow workflow_dispatch to publish to PyPI
-- Update changelog
-- Update changelog
 - Add workflow_dispatch trigger and concurrency to docs deploy
-- Update changelog
-- Update changelog
 - Run workflow on pull requests
 ## [0.1.1] - 2026-06-29
 
@@ -34,10 +29,8 @@
 ### ⚙️ Miscellaneous Tasks
 
 - Add workflow to auto-update changelog via git-cliff
-- Update changelog [skip ci]
 - Add crates.io release workflow
 - Bump version to 0.1.1
-- Update changelog [skip ci]
 ## [0.1.0] - 2026-05-28
 
 ### 📚 Documentation
@@ -57,7 +50,6 @@
 
 ### ⚙️ Miscellaneous Tasks
 
-- Update changelog
 - Enable trusted publishing
 - Bump version to 0.1.0-beta.1
 ## [0.1.0-beta] - 2026-05-07
