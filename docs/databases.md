@@ -100,7 +100,7 @@ databow --driver postgresql --uri postgresql://postgres:password@localhost:5432/
 Install the ClickHouse driver with dbc:
 
 ```sh
-dbc install --pre clickhouse
+dbc install clickhouse
 ```
 
 Connect to ClickHouse:
