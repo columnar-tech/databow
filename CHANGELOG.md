@@ -1,5 +1,10 @@
 ## [unreleased]
 
+### 📚 Documentation
+
+- Remove --pre from dbc install clickhouse (#25)
+## [0.1.2] - 2026-07-08
+
 ### 🐛 Bug Fixes
 
 - Expand env_var substitution in profile option values (#20)
