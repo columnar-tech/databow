@@ -313,8 +313,7 @@ mod tests {
 
         let type_ids = ScalarBuffer::from(vec![0i8; rows.len()]);
         let offsets = ScalarBuffer::from((0..rows.len() as i32).collect::<Vec<_>>());
-        let union =
-            UnionArray::try_new(union_fields, type_ids, Some(offsets), children).unwrap();
+        let union = UnionArray::try_new(union_fields, type_ids, Some(offsets), children).unwrap();
 
         RecordBatch::try_new(
             GET_INFO_SCHEMA.clone(),

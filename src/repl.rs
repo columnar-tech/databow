@@ -58,7 +58,9 @@ fn format_banner(version: &str, vendor: &database::VendorInfo) -> String {
     if let Some(name) = &vendor.name {
         banner.push('\n');
         match &vendor.version {
-            Some(vendor_version) => banner.push_str(&format!("Connected to {name} {vendor_version}")),
+            Some(vendor_version) => {
+                banner.push_str(&format!("Connected to {name} {vendor_version}"))
+            }
             None => banner.push_str(&format!("Connected to {name}")),
         }
     }
