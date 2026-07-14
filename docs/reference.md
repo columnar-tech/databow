@@ -108,11 +108,14 @@ databow --driver duckdb --query "SELECT 42 AS the_answer" --output result.json
 
 The output format is inferred from the file extension:
 
-| Extension       | Format    |
-|-----------------|-----------|
-| `.json`         | JSON      |
-| `.csv`          | CSV       |
-| `.arrow`, `.ipc`| Arrow IPC |
+| Extension       | Format           |
+|-----------------|------------------|
+| `.json`         | JSON             |
+| `.jsonl`        | JSON lines       |
+| `.csv`          | CSV              |
+| `.arrow`, `.ipc`| Arrow IPC (file) |
+| `.arrows`       | Arrow IPC stream |
+| `.parquet`      | Parquet          |
 
 ## --help
 
