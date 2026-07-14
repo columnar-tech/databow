@@ -3,6 +3,10 @@
 ### 📚 Documentation
 
 - Remove --pre from dbc install clickhouse (#25)
+
+### ⚙️ Miscellaneous Tasks
+
+- Limit pypi workflow to release and manual dispatch triggers
 ## [0.1.2] - 2026-07-08
 
 ### 🐛 Bug Fixes
