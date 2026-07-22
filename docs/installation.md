@@ -43,6 +43,14 @@ Install from [crates.io](https://crates.io/crates/databow):
 cargo install databow
 ```
 
+## Homebrew
+
+Install with [Homebrew](https://brew.sh/):
+
+```sh
+brew install columnar-tech/tap/databow
+```
+
 ## Source
 
 Install from source:
