@@ -3,6 +3,7 @@
 ### 📚 Documentation
 
 - Remove --pre from dbc install clickhouse (#25)
+- Add Homebrew installation instructions (#28)
 
 ### ⚙️ Miscellaneous Tasks
 
