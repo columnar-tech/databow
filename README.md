@@ -38,6 +38,12 @@ Install with [Cargo](https://doc.rust-lang.org/cargo/):
 cargo install databow
 ```
 
+Install with [Homebrew](https://brew.sh/):
+
+```sh
+brew install columnar-tech/tap/databow
+```
+
 ## Getting Started
 
 Install the DuckDB ADBC driver with [dbc](https://docs.columnar.tech/dbc/):
