@@ -63,13 +63,13 @@ fn test_query_argument() {
 #[test]
 fn test_driver_inferred_from_uri_scheme() {
     // No --driver or --profile: the driver should be inferred from the
-    // `sqlite:` URI scheme.
+    // `duckdb:` URI scheme.
     let output = Command::new("cargo")
         .args([
             "run",
             "--",
             "--uri",
-            "sqlite::memory:",
+            "duckdb::memory:",
             "--query",
             "SELECT 42 AS answer",
         ])
