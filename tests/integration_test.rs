@@ -61,6 +61,41 @@ fn test_query_argument() {
 }
 
 #[test]
+fn test_driver_inferred_from_uri_scheme() {
+    // No --driver or --profile: the driver should be inferred from the
+    // `sqlite:` URI scheme.
+    let output = Command::new("cargo")
+        .args([
+            "run",
+            "--",
+            "--uri",
+            "sqlite::memory:",
+            "--query",
+            "SELECT 42 AS answer",
+        ])
+        .output()
+        .expect("Failed to execute command");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("answer"));
+    assert!(stdout.contains("42"));
+}
+
+#[test]
+fn test_no_driver_no_scheme_uri_errors() {
+    // A URI with no scheme and no --driver/--profile should still error.
+    let output = Command::new("cargo")
+        .args(["run", "--", "--uri", "plain_path", "--query", "SELECT 1"])
+        .output()
+        .expect("Failed to execute command");
+
+    assert!(!output.status.success());
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("--driver"));
+}
+
+#[test]
 fn test_file_argument() {
     // Create a temporary SQL file
     let mut temp_file = NamedTempFile::new().expect("Failed to create temp file");
@@ -234,6 +269,41 @@ driver = "duckdb"
     assert!(
         output.status.success(),
         "Profile from file should work. stderr: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("answer"));
+    assert!(stdout.contains("42"));
+}
+
+#[test]
+fn test_uri_profile_scheme_from_file_path() {
+    use std::io::Write;
+
+    // A `profile://<path>` URI (no --driver/--profile) should be resolved by
+    // the driver manager's `from_uri`, which loads the referenced profile.
+    let mut temp_file = NamedTempFile::with_suffix(".toml").expect("Failed to create temp file");
+    let profile_path = temp_file.path().to_string_lossy().to_string();
+
+    temp_file
+        .write_all(
+            br#"profile_version = 1
+driver = "duckdb"
+
+[Options]
+"#,
+        )
+        .expect("Failed to write to temp file");
+
+    let uri = format!("profile://{profile_path}");
+    let output = Command::new("cargo")
+        .args(["run", "--", "--uri", &uri, "--query", "SELECT 42 AS answer"])
+        .output()
+        .expect("Failed to execute command");
+
+    assert!(
+        output.status.success(),
+        "profile:// URI should resolve the profile. stderr: {}",
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);

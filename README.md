@@ -121,7 +121,7 @@ Usage: databow [OPTIONS]
 
 Options:
       --profile <profile>    Connection profile name or path
-      --driver <driver>      Driver name (required if --profile not specified)
+      --driver <driver>      Driver name (inferred from --uri scheme or profile if not specified)
       --uri <uri>            Database uniform resource identifier
       --username <username>  Database user username
       --password <password>  Database user password
