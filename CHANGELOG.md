@@ -1,5 +1,9 @@
 ## [unreleased]
 
+### 🚀 Features
+
+- Infer driver from URI scheme (#29)
+
 ### 📚 Documentation
 
 - Remove --pre from dbc install clickhouse (#25)
