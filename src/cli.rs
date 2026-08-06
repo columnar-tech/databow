@@ -17,7 +17,7 @@ pub enum QuerySource {
 #[derive(Debug, Clone)]
 pub enum ConnectionSource {
     Direct {
-        driver_name: String,
+        driver_name: Option<String>,
         uri: Option<String>,
         username: Option<String>,
         password: Option<String>,
@@ -52,7 +52,7 @@ pub fn parse_args() -> AppConfig {
             .conflicts_with("driver"),
         Arg::new("driver")
             .long("driver")
-            .help("Driver name (required if --profile not specified)"),
+            .help("Driver name (inferred from --uri scheme or profile if not specified)"),
         Arg::new("uri")
             .long("uri")
             .help("Database uniform resource identifier"),
@@ -123,14 +123,28 @@ pub fn parse_args() -> AppConfig {
         }
     } else if let Some(driver_name) = driver_name {
         ConnectionSource::Direct {
-            driver_name,
+            driver_name: Some(driver_name),
+            uri,
+            username,
+            password,
+            options,
+        }
+    } else if uri.as_deref().is_some_and(uri_has_driver_scheme) {
+        // The driver can be inferred from the URI scheme (e.g. `--uri duckdb://...`
+        // implies the `duckdb` driver), so neither --driver nor --profile is
+        // required. The raw URI is handed to `ManagedDatabase::from_uri`, which
+        // performs the scheme parsing and driver selection.
+        ConnectionSource::Direct {
+            driver_name: None,
             uri,
             username,
             password,
             options,
         }
     } else {
-        eprintln!("Error: Either --profile or --driver is required");
+        eprintln!(
+            "Error: Provide --driver, --profile, or a --uri with a scheme (e.g. duckdb://...)"
+        );
         exit(1);
     };
 
@@ -163,6 +177,13 @@ pub fn parse_args() -> AppConfig {
     }
 }
 
+fn uri_has_driver_scheme(uri: &str) -> bool {
+    let Some(idx) = uri.find(':') else {
+        return false;
+    };
+    idx != 0
+}
+
 fn parse_option(option: &str) -> Result<(String, String), String> {
     let parts: Vec<&str> = option.splitn(2, '=').collect();
     if parts.len() != 2 {
@@ -184,7 +205,7 @@ mod tests {
     #[test]
     fn test_connection_source_direct() {
         let source = ConnectionSource::Direct {
-            driver_name: "duckdb".to_string(),
+            driver_name: Some("duckdb".to_string()),
             uri: Some(":memory:".to_string()),
             username: None,
             password: None,
@@ -192,7 +213,7 @@ mod tests {
         };
         match source {
             ConnectionSource::Direct { driver_name, .. } => {
-                assert_eq!(driver_name, "duckdb");
+                assert_eq!(driver_name, Some("duckdb".to_string()));
             }
             _ => panic!("Expected Direct variant"),
         }
@@ -214,6 +235,36 @@ mod tests {
             }
             _ => panic!("Expected Profile variant"),
         }
+    }
+
+    #[test]
+    fn test_uri_has_driver_scheme_with_scheme() {
+        assert!(uri_has_driver_scheme("duckdb://:memory:"));
+        assert!(uri_has_driver_scheme("postgresql://host:5432/db"));
+        assert!(uri_has_driver_scheme("sqlite:file::memory:"));
+        assert!(uri_has_driver_scheme("sqlite::memory:"));
+        // Bare `driver:` form: accepted, matching `parse_driver_uri`.
+        assert!(uri_has_driver_scheme("duckdb:"));
+    }
+
+    #[test]
+    fn test_uri_has_driver_scheme_arbitrary_scheme() {
+        assert!(uri_has_driver_scheme("DuckDB://x"));
+    }
+
+    #[test]
+    fn test_uri_has_driver_scheme_no_scheme() {
+        // No colon at all.
+        assert!(!uri_has_driver_scheme("plain_path"));
+        // Empty scheme (leading colon).
+        assert!(!uri_has_driver_scheme(":memory:"));
+    }
+
+    #[test]
+    fn test_uri_has_driver_scheme_accepts_profile_scheme() {
+        // `profile://` is a valid scheme; `from_uri` resolves it to a profile.
+        assert!(uri_has_driver_scheme("profile://my_database"));
+        assert!(uri_has_driver_scheme("PROFILE://my_database"));
     }
 
     #[test]
@@ -272,7 +323,7 @@ mod tests {
     fn test_app_config_with_direct_connection() {
         let config = AppConfig {
             connection: ConnectionSource::Direct {
-                driver_name: "test_driver".to_string(),
+                driver_name: Some("test_driver".to_string()),
                 uri: Some("test_uri".to_string()),
                 username: Some("test_user".to_string()),
                 password: Some("test_pass".to_string()),
@@ -291,7 +342,7 @@ mod tests {
                 password,
                 options,
             } => {
-                assert_eq!(driver_name, "test_driver");
+                assert_eq!(driver_name, &Some("test_driver".to_string()));
                 assert_eq!(*uri, Some("test_uri".to_string()));
                 assert_eq!(*username, Some("test_user".to_string()));
                 assert_eq!(*password, Some("test_pass".to_string()));
