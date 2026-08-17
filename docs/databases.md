@@ -81,6 +81,26 @@ Connect to BigQuery:
 databow --driver bigquery --option adbc.bigquery.sql.project_id=my-gcp-project --option adbc.bigquery.sql.dataset_id=bigquery-public-data
 ```
 
+## chDB
+
+Install the chDB driver with dbc:
+
+```sh
+dbc install chdb
+```
+
+Connect to chDB (in-memory):
+
+```sh
+databow --driver chdb
+```
+
+Connect to chDB (persistent):
+
+```sh
+databow --driver chdb --uri data.chdb
+```
+
 ## Citus
 
 Install the PostgreSQL driver with dbc:
