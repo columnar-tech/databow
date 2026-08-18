@@ -8,6 +8,7 @@
 
 - Remove --pre from dbc install clickhouse (#25)
 - Add Homebrew installation instructions (#28)
+- Add chdb example (#30)
 
 ### ⚙️ Miscellaneous Tasks
 
