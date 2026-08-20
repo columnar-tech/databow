@@ -331,6 +331,20 @@ Connect to PostgreSQL:
 databow --driver postgresql --uri postgresql://postgres:password@localhost:5432/postgres
 ```
 
+## Presto
+
+Install the Presto driver with dbc:
+
+```sh
+dbc install --pre presto
+```
+
+Connect to Presto:
+
+```sh
+databow --driver presto --uri presto://user@localhost:8080/tpch/tiny
+```
+
 ## SingleStore
 
 Install the MySQL driver with dbc:
