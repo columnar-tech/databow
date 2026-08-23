@@ -177,11 +177,19 @@ pub fn parse_args() -> AppConfig {
     }
 }
 
+pub(crate) fn uri_driver_scheme(uri: &str) -> Option<&str> {
+    let (scheme, _) = uri.split_once(':')?;
+    let mut chars = scheme.chars();
+    if !chars.next().is_some_and(|c| c.is_ascii_alphabetic())
+        || !chars.all(|c| c.is_ascii_alphanumeric() || matches!(c, '+' | '-' | '.'))
+    {
+        return None;
+    }
+    Some(scheme)
+}
+
 fn uri_has_driver_scheme(uri: &str) -> bool {
-    let Some(idx) = uri.find(':') else {
-        return false;
-    };
-    idx != 0
+    uri_driver_scheme(uri).is_some()
 }
 
 fn parse_option(option: &str) -> Result<(String, String), String> {
@@ -258,6 +266,10 @@ mod tests {
         assert!(!uri_has_driver_scheme("plain_path"));
         // Empty scheme (leading colon).
         assert!(!uri_has_driver_scheme(":memory:"));
+        // A scheme must start with an ASCII letter and contain only RFC 3986
+        // scheme characters after it.
+        assert!(!uri_has_driver_scheme("not a scheme://x"));
+        assert!(!uri_has_driver_scheme("duck/db://x"));
     }
 
     #[test]
@@ -265,6 +277,13 @@ mod tests {
         // `profile://` is a valid scheme; `from_uri` resolves it to a profile.
         assert!(uri_has_driver_scheme("profile://my_database"));
         assert!(uri_has_driver_scheme("PROFILE://my_database"));
+    }
+
+    #[test]
+    fn test_uri_driver_scheme_preserves_original_case() {
+        assert_eq!(uri_driver_scheme("DuckDB://x"), Some("DuckDB"));
+        assert_eq!(uri_driver_scheme("sqlite::memory:"), Some("sqlite"));
+        assert_eq!(uri_driver_scheme(":memory:"), None);
     }
 
     #[test]

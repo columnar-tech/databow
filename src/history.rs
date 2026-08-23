@@ -7,7 +7,7 @@
 //! boundary between reedline's type-erased `History` trait and the typed
 //! SQLite APIs, allowing connection identity to survive a save/load cycle.
 
-use crate::cli::ConnectionSource;
+use crate::cli::{self, ConnectionSource};
 use chrono::Utc;
 use reedline::{
     History, HistoryItem, HistoryItemExtraInfo, HistoryItemId, HistorySessionId, Result,
@@ -40,25 +40,14 @@ impl ConnectionIdentity {
             ConnectionSource::Direct {
                 driver_name, uri, ..
             } => Self::Direct {
-                driver: driver_name
-                    .clone()
-                    .or_else(|| uri.as_deref().and_then(uri_scheme)),
+                driver: driver_name.clone().or_else(|| {
+                    uri.as_deref()
+                        .and_then(cli::uri_driver_scheme)
+                        .map(|scheme| scheme.to_ascii_lowercase())
+                }),
             },
         }
     }
-}
-
-/// Extract only a URI scheme.  The target, user information, and query are
-/// intentionally never retained in history metadata.
-fn uri_scheme(uri: &str) -> Option<String> {
-    let (scheme, _) = uri.split_once(':')?;
-    let mut chars = scheme.chars();
-    if !chars.next().is_some_and(|c| c.is_ascii_alphabetic())
-        || !chars.all(|c| c.is_ascii_alphanumeric() || matches!(c, '+' | '-' | '.'))
-    {
-        return None;
-    }
-    Some(scheme.to_ascii_lowercase())
 }
 
 /// Lossless JSON object wrapper for databow history metadata.
@@ -140,8 +129,17 @@ impl HistoryAdapter {
         identity: ConnectionIdentity,
         session: Option<HistorySessionId>,
     ) -> Result<Self> {
+        Self::persistent_at(path, identity, session, Utc::now())
+    }
+
+    fn persistent_at(
+        path: PathBuf,
+        identity: ConnectionIdentity,
+        session: Option<HistorySessionId>,
+        session_timestamp: chrono::DateTime<Utc>,
+    ) -> Result<Self> {
         Ok(Self::new(
-            SqliteBackedHistory::with_file(path, session, Some(Utc::now()))?,
+            SqliteBackedHistory::with_file(path, session, Some(session_timestamp))?,
             identity,
             session,
         ))
@@ -174,7 +172,7 @@ impl HistoryAdapter {
         metadata.set_connection(self.identity.clone());
         HistoryItem {
             id: item.id,
-            start_timestamp: item.start_timestamp,
+            start_timestamp: item.start_timestamp.or_else(|| Some(Utc::now())),
             command_line: item.command_line,
             session_id: item.session_id.or(self.session),
             hostname: item.hostname,
@@ -298,7 +296,8 @@ fn initialize_history_at(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use reedline::{History, SearchDirection};
+    use chrono::TimeZone;
+    use reedline::{History, SearchDirection, SearchFilter, SearchQuery};
     use tempfile::tempdir;
 
     fn item(command_line: &str) -> HistoryItem {
@@ -375,16 +374,6 @@ mod tests {
     }
 
     #[test]
-    fn uri_scheme_is_safe_and_normalized() {
-        assert_eq!(
-            uri_scheme("DuckDB://secret/path"),
-            Some("duckdb".to_string())
-        );
-        assert_eq!(uri_scheme(":memory:"), None);
-        assert_eq!(uri_scheme("not a scheme://x"), None);
-    }
-
-    #[test]
     fn unknown_metadata_survives_connection_update() {
         let mut metadata: HistoryExtraInfo =
             serde_json::from_str(r#"{"connection":"future-format","future":{"value":1}}"#).unwrap();
@@ -407,6 +396,7 @@ mod tests {
         let loaded = history.load_with_extra(id).unwrap();
         assert_eq!(loaded.command_line, "select 1");
         assert_eq!(loaded.session_id, session);
+        assert!(loaded.start_timestamp.is_some());
         assert_eq!(
             loaded.more_info.unwrap().connection(),
             Some(profile_identity())
@@ -418,6 +408,72 @@ mod tests {
         assert_eq!(
             loaded.more_info.unwrap().connection(),
             Some(profile_identity())
+        );
+    }
+
+    #[test]
+    fn timestamp_is_filled_without_overwriting_explicit_value() {
+        let mut history = HistoryAdapter::in_memory(profile_identity(), None).unwrap();
+
+        let saved = history.save(item("select 1")).unwrap();
+        assert!(saved.start_timestamp.is_some());
+        assert!(
+            history
+                .load_with_extra(saved.id.unwrap())
+                .unwrap()
+                .start_timestamp
+                .is_some()
+        );
+
+        let explicit = Utc.timestamp_millis_opt(123_456).single().unwrap();
+        let mut explicit_item = item("select 2");
+        explicit_item.start_timestamp = Some(explicit);
+        let explicit_saved = history.save(explicit_item).unwrap();
+        assert_eq!(explicit_saved.start_timestamp, Some(explicit));
+        assert_eq!(
+            history
+                .load_with_extra(explicit_saved.id.unwrap())
+                .unwrap()
+                .start_timestamp,
+            Some(explicit)
+        );
+    }
+
+    #[test]
+    fn timestamped_rows_are_visible_to_a_later_session_cursor() {
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("history.sqlite3");
+        let session_a = reedline::Reedline::create_history_session_id();
+        let mut history_a =
+            HistoryAdapter::persistent_at(path.clone(), profile_identity(), session_a, Utc::now())
+                .unwrap();
+        let saved = history_a.save(item("select from session_a")).unwrap();
+        let saved_timestamp = saved.start_timestamp.expect("adapter fills timestamp");
+        drop(history_a);
+
+        let session_b = reedline::Reedline::create_history_session_id();
+        let session_b_timestamp = saved_timestamp + chrono::Duration::milliseconds(1);
+        let history_b =
+            HistoryAdapter::persistent_at(path, profile_identity(), session_b, session_b_timestamp)
+                .unwrap();
+        // This is the initial backward query issued by reedline's
+        // HistoryCursor::back for HistoryNavigationQuery::Normal. HistoryCursor
+        // is not re-exported by reedline 0.51, so keep the regression test on
+        // the exact public History query it constructs.
+        let results = history_b
+            .search(SearchQuery {
+                start_id: None,
+                end_id: None,
+                start_time: None,
+                end_time: None,
+                direction: SearchDirection::Backward,
+                limit: Some(1),
+                filter: SearchFilter::anything(session_b),
+            })
+            .unwrap();
+        assert_eq!(
+            results.first().map(|item| item.command_line.as_str()),
+            Some("select from session_a")
         );
     }
 
