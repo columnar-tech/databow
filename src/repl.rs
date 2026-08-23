@@ -3,6 +3,7 @@
 
 use crate::database;
 use crate::highlighter::SyntectHighlighter;
+use crate::history::{self, ConnectionIdentity};
 use crate::table::{TableMode, print_batches};
 use adbc_core::Connection;
 use reedline::{
@@ -50,10 +51,20 @@ impl Prompt for SqlPrompt {
     }
 }
 
-pub fn run_repl(mut connection: impl Connection, table_mode: TableMode) {
+pub fn run_repl(
+    mut connection: impl Connection,
+    table_mode: TableMode,
+    connection_identity: ConnectionIdentity,
+) {
+    let history_session = Reedline::create_history_session_id();
     let mut line_editor = Reedline::create()
         .with_highlighter(Box::new(SyntectHighlighter::new()))
-        .with_validator(Box::new(SqlValidator));
+        .with_validator(Box::new(SqlValidator))
+        .with_history_session_id(history_session)
+        .with_history(history::initialize_history(
+            connection_identity,
+            history_session,
+        ));
     let prompt = SqlPrompt;
     let mut ctrl_c_count: u8 = 0;
 

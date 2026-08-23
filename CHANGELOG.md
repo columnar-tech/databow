@@ -2,6 +2,7 @@
 
 ### 🚀 Features
 
+- Add SQLite-backed interactive history with safe connection metadata
 - Infer driver from URI scheme (#29)
 
 ### 📚 Documentation

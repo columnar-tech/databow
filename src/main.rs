@@ -4,6 +4,7 @@
 mod cli;
 mod database;
 mod highlighter;
+mod history;
 mod output;
 mod repl;
 mod table;
@@ -21,11 +22,12 @@ fn main() {
     } = parse_args();
 
     if matches!(query_source, QuerySource::Interactive) {
+        let connection_identity = history::ConnectionIdentity::from_source(&connection);
         let connection = database::initialize_connection(connection).unwrap_or_else(|e| {
             eprintln!("{e}");
             exit(1);
         });
-        repl::run_repl(connection, table_mode);
+        repl::run_repl(connection, table_mode, connection_identity);
         return;
     }
 
