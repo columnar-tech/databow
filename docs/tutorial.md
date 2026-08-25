@@ -143,7 +143,7 @@ $ databow --profile warehouse --file query.sql
 └───────────────────┘
 ```
 
-Instead of printing query results to stdout, the [`--output` argument](/reference/#-output) can be used to write results to JSON, JSON lines, CSV, Arrow IPC, Arrow IPC stream, or Parquet files:
+Instead of printing query results to stdout, the [`--output` argument](/reference/#-output) can be used to write results to JSON, JSON lines, CSV, Arrow IPC file, Arrow IPC stream, or Parquet files:
 
 ```console
 $ databow --profile warehouse --query "SELECT * FROM penguins" --output penguins.csv
