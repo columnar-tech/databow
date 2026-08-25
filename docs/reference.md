@@ -113,7 +113,7 @@ The output format is inferred from the file extension:
 | `.json`         | JSON             |
 | `.jsonl`        | JSON lines       |
 | `.csv`          | CSV              |
-| `.arrow`, `.ipc`| Arrow IPC (file) |
+| `.arrow`, `.ipc`| Arrow IPC file   |
 | `.arrows`       | Arrow IPC stream |
 | `.parquet`      | Parquet          |
 
