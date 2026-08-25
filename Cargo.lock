@@ -601,6 +601,7 @@ dependencies = [
  "adbc_driver_manager",
  "arrow",
  "arrow-array",
+ "arrow-buffer",
  "arrow-cast",
  "arrow-schema",
  "clap",
