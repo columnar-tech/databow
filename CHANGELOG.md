@@ -1,8 +1,20 @@
 ## [unreleased]
 
+### 🚀 Features
+
+- Infer driver from URI scheme (#29)
+
 ### 📚 Documentation
 
 - Remove --pre from dbc install clickhouse (#25)
+- Add Homebrew installation instructions (#28)
+- Add chdb example (#30)
+- Add presto example (#31)
+- Add cassandra example
+
+### ⚙️ Miscellaneous Tasks
+
+- Limit pypi workflow to release and manual dispatch triggers
 ## [0.1.2] - 2026-07-08
 
 ### 🐛 Bug Fixes

@@ -25,6 +25,20 @@ Connect to Amazon Redshift:
 databow --driver redshift --uri postgresql://localhost:5439 --option redshift.cluster_type=redshift-serverless --option redshift.workgroup_name=<WORKGROUP_NAME> --option redshift.db_name=sample_data_dev
 ```
 
+## Apache Cassandra
+
+Install the Apache Cassandra driver with dbc:
+
+```sh
+dbc install --pre cassandra
+```
+
+Connect to Apache Cassandra:
+
+```sh
+databow --driver cassandra --uri cassandra://localhost:9042/my_keyspace
+```
+
 ## Apache DataFusion
 
 Install the Apache DataFusion driver with dbc:
@@ -79,6 +93,26 @@ Connect to BigQuery:
 
 ```sh
 databow --driver bigquery --option adbc.bigquery.sql.project_id=my-gcp-project --option adbc.bigquery.sql.dataset_id=bigquery-public-data
+```
+
+## chDB
+
+Install the chDB driver with dbc:
+
+```sh
+dbc install chdb
+```
+
+Connect to chDB (in-memory):
+
+```sh
+databow --driver chdb
+```
+
+Connect to chDB (persistent):
+
+```sh
+databow --driver chdb --uri data.chdb
 ```
 
 ## Citus
@@ -309,6 +343,20 @@ Connect to PostgreSQL:
 
 ```sh
 databow --driver postgresql --uri postgresql://postgres:password@localhost:5432/postgres
+```
+
+## Presto
+
+Install the Presto driver with dbc:
+
+```sh
+dbc install --pre presto
+```
+
+Connect to Presto:
+
+```sh
+databow --driver presto --uri presto://user@localhost:8080/tpch/tiny
 ```
 
 ## SingleStore

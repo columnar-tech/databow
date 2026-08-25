@@ -7,7 +7,7 @@ use adbc_core::{Connection, Database, Driver, LOAD_FLAG_DEFAULT, Statement};
 use adbc_driver_manager::profile::{
     ConnectionProfile, ConnectionProfileProvider, FilesystemProfileProvider, process_profile_value,
 };
-use adbc_driver_manager::{ManagedConnection, ManagedDriver};
+use adbc_driver_manager::{ManagedConnection, ManagedDatabase, ManagedDriver};
 use arrow_array::cast::AsArray;
 use arrow_array::{Array, RecordBatch, UnionArray};
 use std::collections::HashSet;
@@ -116,30 +116,58 @@ pub fn initialize_connection(source: ConnectionSource) -> Result<ManagedConnecti
 }
 
 fn initialize_direct_connection(
-    driver_name: String,
+    driver_name: Option<String>,
     uri: Option<String>,
     username: Option<String>,
     password: Option<String>,
     options: Vec<(String, String)>,
 ) -> Result<ManagedConnection, String> {
-    let mut driver = ManagedDriver::load_from_name(
-        &driver_name,
-        None,
-        AdbcVersion::default(),
-        LOAD_FLAG_DEFAULT,
-        None,
-    )
-    .map_err(|e| format!("Failed to load driver '{}': {}", driver_name, e))?;
+    match driver_name {
+        // Explicit driver: load it by name and hand it the URI as an option.
+        Some(driver_name) => {
+            let mut driver = ManagedDriver::load_from_name(
+                &driver_name,
+                None,
+                AdbcVersion::default(),
+                LOAD_FLAG_DEFAULT,
+                None,
+            )
+            .map_err(|e| format!("Failed to load driver '{}': {}", driver_name, e))?;
 
-    let db_options = build_database_options(uri, username, password, options);
+            let db_options = build_database_options(uri, username, password, options);
 
-    let database = driver
-        .new_database_with_opts(db_options)
-        .map_err(|e| format!("Failed to create database handle: {e}"))?;
+            let database = driver
+                .new_database_with_opts(db_options)
+                .map_err(|e| format!("Failed to create database handle: {e}"))?;
 
-    database
-        .new_connection()
-        .map_err(|e| format!("Failed to create connection: {e}"))
+            database
+                .new_connection()
+                .map_err(|e| format!("Failed to create connection: {e}"))
+        }
+        // No driver given: infer it from the URI scheme via the driver manager.
+        None => {
+            let uri = uri
+                .ok_or_else(|| "Internal error: URI is required to infer the driver".to_string())?;
+
+            // The URI itself selects the driver; the remaining CLI options are
+            // layered on top (they override any options derived from the URI).
+            let opts = build_database_options(None, username, password, options);
+
+            let database = ManagedDatabase::from_uri_with_opts(
+                &uri,
+                None,
+                AdbcVersion::default(),
+                LOAD_FLAG_DEFAULT,
+                None,
+                opts,
+            )
+            .map_err(|e| format!("Failed to load driver from URI '{}': {}", uri, e))?;
+
+            database
+                .new_connection()
+                .map_err(|e| format!("Failed to create connection: {e}"))
+        }
+    }
 }
 
 fn initialize_profile_connection(
