@@ -3,6 +3,7 @@
 ### 🚀 Features
 
 - Infer driver from URI scheme (#29)
+- Show info on repl startup (#27)
 
 ### 📚 Documentation
 
