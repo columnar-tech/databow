@@ -2,26 +2,33 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use arrow::csv::writer::Writer as CsvWriter;
-use arrow::ipc::writer::FileWriter as IpcWriter;
-use arrow::json::writer::{JsonArray, Writer as JsonWriter};
+use arrow::ipc::writer::{FileWriter as IpcWriter, StreamWriter as IpcStreamWriter};
+use arrow::json::writer::{JsonArray, LineDelimited, Writer as JsonWriter};
 use arrow_array::RecordBatch;
 use arrow_schema::ArrowError;
+use parquet::arrow::ArrowWriter;
 use std::fs::File;
 use std::path::Path;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum OutputFormat {
     Json,
+    Jsonl,
     Csv,
     Arrow,
+    ArrowStream,
+    Parquet,
 }
 
 impl OutputFormat {
     pub fn from_path(path: &Path) -> Result<Self, String> {
         match path.extension().and_then(|ext| ext.to_str()) {
             Some("json") => Ok(OutputFormat::Json),
+            Some("jsonl") => Ok(OutputFormat::Jsonl),
             Some("csv") => Ok(OutputFormat::Csv),
             Some("arrow" | "ipc") => Ok(OutputFormat::Arrow),
+            Some("arrows") => Ok(OutputFormat::ArrowStream),
+            Some("parquet") => Ok(OutputFormat::Parquet),
             Some(ext) => Err(format!("Unsupported file extension: '.{ext}'")),
             None => Err("Cannot infer format: no file extension".to_string()),
         }
@@ -38,13 +45,26 @@ pub fn write_batches_to_file(batches: &[RecordBatch], path: &Path) -> Result<(),
 
     match format {
         OutputFormat::Json => write_json(batches, file),
+        OutputFormat::Jsonl => write_jsonl(batches, file),
         OutputFormat::Csv => write_csv(batches, file),
         OutputFormat::Arrow => write_arrow_ipc(batches, file),
+        OutputFormat::ArrowStream => write_arrow_stream(batches, file),
+        OutputFormat::Parquet => write_parquet(batches, file),
     }
 }
 
 fn write_json(batches: &[RecordBatch], file: File) -> Result<(), ArrowError> {
     let mut writer = JsonWriter::<_, JsonArray>::new(file);
+    for batch in batches {
+        writer.write(batch)?;
+    }
+    writer.finish()?;
+
+    Ok(())
+}
+
+fn write_jsonl(batches: &[RecordBatch], file: File) -> Result<(), ArrowError> {
+    let mut writer = JsonWriter::<_, LineDelimited>::new(file);
     for batch in batches {
         writer.write(batch)?;
     }
@@ -72,6 +92,39 @@ fn write_arrow_ipc(batches: &[RecordBatch], file: File) -> Result<(), ArrowError
         writer.write(batch)?;
     }
     writer.finish()?;
+
+    Ok(())
+}
+
+fn write_arrow_stream(batches: &[RecordBatch], file: File) -> Result<(), ArrowError> {
+    if batches.is_empty() {
+        return Ok(());
+    }
+    let schema = batches[0].schema();
+    let mut writer = IpcStreamWriter::try_new(file, &schema)?;
+    for batch in batches {
+        writer.write(batch)?;
+    }
+    writer.finish()?;
+
+    Ok(())
+}
+
+fn write_parquet(batches: &[RecordBatch], file: File) -> Result<(), ArrowError> {
+    if batches.is_empty() {
+        return Ok(());
+    }
+    let schema = batches[0].schema();
+    let mut writer = ArrowWriter::try_new(file, schema, None)
+        .map_err(|e| ArrowError::ExternalError(Box::new(e)))?;
+    for batch in batches {
+        writer
+            .write(batch)
+            .map_err(|e| ArrowError::ExternalError(Box::new(e)))?;
+    }
+    writer
+        .close()
+        .map_err(|e| ArrowError::ExternalError(Box::new(e)))?;
 
     Ok(())
 }
@@ -241,6 +294,118 @@ mod tests {
 
         // Verify file was not created
         assert!(!path.exists());
+    }
+
+    #[test]
+    fn test_output_format_from_path_arrows() {
+        let path = Path::new("output.arrows");
+        assert_eq!(
+            OutputFormat::from_path(path).unwrap(),
+            OutputFormat::ArrowStream
+        );
+    }
+
+    #[test]
+    fn test_output_format_from_path_parquet() {
+        let path = Path::new("output.parquet");
+        assert_eq!(
+            OutputFormat::from_path(path).unwrap(),
+            OutputFormat::Parquet
+        );
+    }
+
+    #[test]
+    fn test_output_format_from_path_jsonl() {
+        let path = Path::new("output.jsonl");
+        assert_eq!(OutputFormat::from_path(path).unwrap(), OutputFormat::Jsonl);
+    }
+
+    #[test]
+    fn test_write_arrow_stream() {
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("output.arrows");
+        let batch = create_test_batch();
+
+        write_batches_to_file(std::slice::from_ref(&batch), &path).unwrap();
+
+        // Verify by reading it back as an IPC stream
+        let file = File::open(&path).unwrap();
+        let reader = arrow::ipc::reader::StreamReader::try_new(file, None).unwrap();
+        let read_batches: Vec<RecordBatch> = reader.map(|r| r.unwrap()).collect();
+
+        assert_eq!(read_batches.len(), 1);
+        assert_eq!(read_batches[0].num_rows(), batch.num_rows());
+        assert_eq!(read_batches[0].num_columns(), batch.num_columns());
+    }
+
+    #[test]
+    fn test_write_arrow_stream_empty_batches_direct() {
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("output.arrows");
+        let file = File::create(&path).unwrap();
+
+        let result = write_arrow_stream(&[], file);
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_write_parquet() {
+        use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
+
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("output.parquet");
+        let batch = create_test_batch();
+
+        write_batches_to_file(std::slice::from_ref(&batch), &path).unwrap();
+
+        // Verify by reading it back
+        let file = File::open(&path).unwrap();
+        let reader = ParquetRecordBatchReaderBuilder::try_new(file)
+            .unwrap()
+            .build()
+            .unwrap();
+        let read_batches: Vec<RecordBatch> = reader.map(|r| r.unwrap()).collect();
+
+        let total_rows: usize = read_batches.iter().map(|b| b.num_rows()).sum();
+        assert_eq!(total_rows, batch.num_rows());
+        assert_eq!(read_batches[0].num_columns(), batch.num_columns());
+    }
+
+    #[test]
+    fn test_write_parquet_empty_batches_direct() {
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("output.parquet");
+        let file = File::create(&path).unwrap();
+
+        let result = write_parquet(&[], file);
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_write_jsonl() {
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("output.jsonl");
+        let batch = create_test_batch();
+
+        write_batches_to_file(std::slice::from_ref(&batch), &path).unwrap();
+
+        let mut file = File::open(&path).unwrap();
+        let mut contents = String::new();
+        file.read_to_string(&mut contents).unwrap();
+
+        // JSON lines: one object per line, not a wrapping array
+        assert!(!contents.trim_start().starts_with('['));
+        let lines: Vec<&str> = contents.lines().filter(|l| !l.is_empty()).collect();
+        assert_eq!(lines.len(), 3);
+        for line in &lines {
+            assert!(line.trim_start().starts_with('{'));
+            assert!(line.trim_end().ends_with('}'));
+        }
+        assert!(contents.contains("Alice"));
+        assert!(contents.contains("Bob"));
+        assert!(contents.contains("Charlie"));
     }
 
     #[test]
