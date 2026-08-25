@@ -10,6 +10,7 @@
 - Add Homebrew installation instructions (#28)
 - Add chdb example (#30)
 - Add presto example (#31)
+- Add cassandra example
 
 ### ⚙️ Miscellaneous Tasks
 
