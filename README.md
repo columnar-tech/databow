@@ -21,7 +21,7 @@ A command-line tool for querying databases via [ADBC](https://arrow.apache.org/a
 - **Interactive SQL shell** - Execute SQL queries with command history and intuitive navigation
 - **Syntax highlighting** - SQL queries highlighted for improved readability
 - **Formatted output** - Results displayed in clean, aligned tables with dynamic column width
-- **File export** - Export query results to JSON, JSON lines, CSV, Arrow IPC, Arrow IPC stream, or Parquet files
+- **File export** - Export query results to JSON, JSON lines, CSV, Arrow IPC, or Parquet files
 - **Fast and lightweight** - Built in Rust for high performance and minimal resource usage
 
 ## Installation
