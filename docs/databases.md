@@ -25,6 +25,20 @@ Connect to Amazon Redshift:
 databow --driver redshift --uri postgresql://localhost:5439 --option redshift.cluster_type=redshift-serverless --option redshift.workgroup_name=<WORKGROUP_NAME> --option redshift.db_name=sample_data_dev
 ```
 
+## Apache Cassandra
+
+Install the Apache Cassandra driver with dbc:
+
+```sh
+dbc install --pre cassandra
+```
+
+Connect to Apache Cassandra:
+
+```sh
+databow --driver cassandra --uri cassandra://localhost:9042/my_keyspace
+```
+
 ## Apache DataFusion
 
 Install the Apache DataFusion driver with dbc:
