@@ -29,4 +29,5 @@ syntect = "5.3.0"
 terminal-colorsaurus = "1.0.3"
 
 [dev-dependencies]
+arrow-buffer = "58.1.0"
 tempfile = "3.27.0"

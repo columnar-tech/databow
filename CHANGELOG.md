@@ -4,6 +4,7 @@
 
 - Add SQLite-backed interactive history with safe connection metadata (#32)
 - Infer driver from URI scheme (#29)
+- Show info on repl startup (#27)
 
 ### 📚 Documentation
 
@@ -11,6 +12,7 @@
 - Add Homebrew installation instructions (#28)
 - Add chdb example (#30)
 - Add presto example (#31)
+- Add cassandra example
 
 ### ⚙️ Miscellaneous Tasks
 
