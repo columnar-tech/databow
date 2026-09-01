@@ -53,6 +53,11 @@ impl Highlighter for SyntectHighlighter {
     fn highlight(&self, line: &str, _cursor: usize) -> StyledText {
         let mut styled = StyledText::new();
 
+        if line.trim_start().starts_with(':') {
+            styled.push((Style::new(), line.to_string()));
+            return styled;
+        }
+
         let syntax = self
             .syntax_set
             .find_syntax_by_extension("sql")

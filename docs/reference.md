@@ -114,6 +114,50 @@ The output format is inferred from the file extension:
 | `.csv`          | CSV       |
 | `.arrow`, `.ipc`| Arrow IPC |
 
+## Commands
+
+A line starting with `:` is a command instead of a SQL query. Commands work in the interactive shell and with [`--query`](/reference/#-query), [`--file`](/reference/#-file) and standard input.
+
+| Command                                 | Alias | Description                       |
+|-----------------------------------------|-------|-----------------------------------|
+| `:get-objects [<catalog.schema.table>]` | `:go` | List catalogs, schemas and tables |
+| `:get-schema <catalog.schema.table>`    | `:gs` | Show the columns of a table       |
+| `:help`                                 | `:h`  | List the commands                 |
+| `:quit`                                 | `:q`  | Exit databow                      |
+
+`:get-objects` calls the ADBC `GetObjects` method, so it works the same way on every driver. Without an identifier it lists every catalog, schema and table the connection exposes. The parts of the identifier are ADBC search patterns, where `%` and `_` are wildcards:
+
+```console
+> :get-objects warehouse.main.%
+┌───────────┬───────────┬──────────┬────────────┐
+│ catalog   │ db_schema │ table    │ table_type │
+├───────────┼───────────┼──────────┼────────────┤
+│ warehouse │ main      │ adelie   │ VIEW       │
+│ warehouse │ main      │ penguins │ BASE TABLE │
+└───────────┴───────────┴──────────┴────────────┘
+```
+
+`:get-schema` calls `GetTableSchema` and shows the Arrow schema of one table. The table name must match exactly:
+
+```console
+> :get-schema penguins
+┌────────────────┬─────────┬──────────┐
+│ column         │ type    │ nullable │
+├────────────────┼─────────┼──────────┤
+│ species        │ Utf8    │ true     │
+│ island         │ Utf8    │ true     │
+│ bill_length_mm │ Float64 │ true     │
+│ body_mass_g    │ Int32   │ true     │
+│ year           │ Int32   │ true     │
+└────────────────┴─────────┴──────────┘
+```
+
+Both commands produce a table like any query, so [`--mode`](/reference/#-mode) and [`--output`](/reference/#-output) work:
+
+```sh
+databow --profile warehouse --query ":get-objects" --output objects.json
+```
+
 ## --help
 
 Print the help message
