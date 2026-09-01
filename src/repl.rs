@@ -1,6 +1,7 @@
 // Copyright 2026 Columnar Technologies Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::command::{self, Command};
 use crate::database;
 use crate::highlighter::SyntectHighlighter;
 use crate::table::{TableMode, print_batches};
@@ -15,7 +16,7 @@ struct SqlValidator;
 impl Validator for SqlValidator {
     fn validate(&self, line: &str) -> ValidationResult {
         let trimmed = line.trim();
-        if trimmed.is_empty() || trimmed.ends_with(';') {
+        if trimmed.is_empty() || trimmed.ends_with(';') || trimmed.starts_with(':') {
             ValidationResult::Complete
         } else {
             ValidationResult::Incomplete
@@ -87,16 +88,18 @@ pub fn run_repl(mut connection: impl Connection, table_mode: TableMode) {
                     continue;
                 }
 
-                let sql = buffer.trim_end().trim_end_matches(';');
-                let batches = match database::execute_query(&mut connection, sql) {
-                    Ok(batches) => batches,
-                    Err(err) => {
-                        eprintln!("{err}");
-                        continue;
-                    }
-                };
-                if let Err(err) = print_batches(&batches, table_mode) {
-                    eprintln!("Failed to print batches: {err}");
+                match command::parse(&buffer) {
+                    Err(err) => eprintln!("{err}"),
+                    Ok(Command::Help) => println!("{}", command::HELP),
+                    Ok(Command::Quit) => break,
+                    Ok(parsed) => match command::run(&mut connection, parsed) {
+                        Ok(batches) => {
+                            if let Err(err) = print_batches(&batches, table_mode) {
+                                eprintln!("Failed to print batches: {err}");
+                            }
+                        }
+                        Err(err) => eprintln!("{err}"),
+                    },
                 }
             }
             Ok(Signal::CtrlC) => {
@@ -118,6 +121,22 @@ pub fn run_repl(mut connection: impl Connection, table_mode: TableMode) {
 mod tests {
     use super::*;
     use crate::database::VendorInfo;
+
+    #[test]
+    fn test_validator_completes_commands_without_a_semicolon() {
+        assert!(matches!(
+            SqlValidator.validate(":help"),
+            ValidationResult::Complete
+        ));
+        assert!(matches!(
+            SqlValidator.validate("  :get-schema t"),
+            ValidationResult::Complete
+        ));
+        assert!(matches!(
+            SqlValidator.validate("SELECT 1"),
+            ValidationResult::Incomplete
+        ));
+    }
 
     #[test]
     fn test_format_banner_version_only() {
