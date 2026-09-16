@@ -67,6 +67,20 @@ Connect to Apache Doris:
 databow --driver flightsql --uri grpc://localhost:8070 --username root
 ```
 
+## Apache Druid
+
+Install the Apache Druid driver with dbc:
+
+```sh
+dbc install --pre druid
+```
+
+Connect to Apache Druid:
+
+```sh
+databow --driver druid --uri "druid://localhost:8888?tls=false"
+```
+
 ## Apache Spark
 
 Install the Apache Spark driver with dbc:
