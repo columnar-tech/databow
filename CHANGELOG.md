@@ -12,6 +12,7 @@
 - Add chdb example (#30)
 - Add presto example (#31)
 - Add cassandra example
+- Add druid example
 
 ### ⚙️ Miscellaneous Tasks
 
