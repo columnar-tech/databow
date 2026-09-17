@@ -2,15 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli::ConnectionSource;
-use adbc_core::options::{AdbcVersion, InfoCode, OptionDatabase, OptionValue};
+use adbc_core::options::{AdbcVersion, InfoCode, ObjectDepth, OptionDatabase, OptionValue};
 use adbc_core::{Connection, Database, Driver, LOAD_FLAG_DEFAULT, Statement};
 use adbc_driver_manager::profile::{
     ConnectionProfile, ConnectionProfileProvider, FilesystemProfileProvider, process_profile_value,
 };
 use adbc_driver_manager::{ManagedConnection, ManagedDatabase, ManagedDriver};
 use arrow_array::cast::AsArray;
-use arrow_array::{Array, RecordBatch, UnionArray};
+use arrow_array::{Array, ArrayRef, BooleanArray, RecordBatch, StringArray, UnionArray};
+use arrow_cast::display::array_value_to_string;
+use arrow_schema::{DataType, Field, Schema};
 use std::collections::HashSet;
+use std::sync::Arc;
 
 /// Vendor (database product) metadata reported by an ADBC driver.
 #[derive(Debug, Default)]
@@ -308,10 +311,127 @@ fn merge_options(
 mod tests {
     use super::*;
     use adbc_core::schemas::GET_INFO_SCHEMA;
-    use arrow_array::{StringArray, UInt32Array, UnionArray};
-    use arrow_buffer::ScalarBuffer;
-    use arrow_schema::DataType;
+    use arrow_array::{ListArray, StringArray, StructArray, UInt32Array, UnionArray};
+    use arrow_buffer::{NullBuffer, OffsetBuffer, ScalarBuffer};
+    use arrow_schema::{DataType, TimeUnit};
     use std::sync::Arc;
+
+    type TableFixture<'a> = (&'a str, &'a str);
+    type SchemaFixture<'a> = (Option<&'a str>, Option<Vec<TableFixture<'a>>>);
+    type CatalogFixture<'a> = (Option<&'a str>, Option<Vec<SchemaFixture<'a>>>);
+
+    fn make_objects_batch(catalogs: &[CatalogFixture]) -> RecordBatch {
+        let mut catalog_names: Vec<Option<&str>> = Vec::new();
+        let mut schema_names: Vec<Option<&str>> = Vec::new();
+        let mut schema_offsets: Vec<i32> = vec![0];
+        let mut schema_validity: Vec<bool> = Vec::new();
+        let mut table_names: Vec<&str> = Vec::new();
+        let mut table_types: Vec<&str> = Vec::new();
+        let mut table_offsets: Vec<i32> = vec![0];
+        let mut table_validity: Vec<bool> = Vec::new();
+
+        for (catalog_name, schemas) in catalogs {
+            catalog_names.push(*catalog_name);
+            let Some(schemas) = schemas else {
+                schema_validity.push(false);
+                schema_offsets.push(schema_names.len() as i32);
+                continue;
+            };
+            schema_validity.push(true);
+            for (schema_name, tables) in schemas {
+                schema_names.push(*schema_name);
+                let Some(tables) = tables else {
+                    table_validity.push(false);
+                    table_offsets.push(table_names.len() as i32);
+                    continue;
+                };
+                table_validity.push(true);
+                for (table_name, table_type) in tables {
+                    table_names.push(table_name);
+                    table_types.push(table_type);
+                }
+                table_offsets.push(table_names.len() as i32);
+            }
+            schema_offsets.push(schema_names.len() as i32);
+        }
+
+        let tables = StructArray::from(vec![
+            (
+                Arc::new(Field::new("table_name", DataType::Utf8, true)),
+                Arc::new(StringArray::from(table_names)) as ArrayRef,
+            ),
+            (
+                Arc::new(Field::new("table_type", DataType::Utf8, true)),
+                Arc::new(StringArray::from(table_types)) as ArrayRef,
+            ),
+        ]);
+        let table_lists = ListArray::new(
+            Arc::new(Field::new("l", tables.data_type().clone(), true)),
+            OffsetBuffer::new(table_offsets.into()),
+            Arc::new(tables),
+            Some(NullBuffer::from(table_validity)),
+        );
+
+        let schemas = StructArray::from(vec![
+            (
+                Arc::new(Field::new("db_schema_name", DataType::Utf8, true)),
+                Arc::new(StringArray::from(schema_names)) as ArrayRef,
+            ),
+            (
+                Arc::new(Field::new(
+                    "db_schema_tables",
+                    table_lists.data_type().clone(),
+                    true,
+                )),
+                Arc::new(table_lists) as ArrayRef,
+            ),
+        ]);
+        let schema_lists = ListArray::new(
+            Arc::new(Field::new("l", schemas.data_type().clone(), true)),
+            OffsetBuffer::new(schema_offsets.into()),
+            Arc::new(schemas),
+            Some(NullBuffer::from(schema_validity)),
+        );
+
+        RecordBatch::try_new(
+            Arc::new(Schema::new(vec![
+                Field::new("catalog_name", DataType::Utf8, true),
+                Field::new("catalog_db_schemas", schema_lists.data_type().clone(), true),
+            ])),
+            vec![
+                Arc::new(StringArray::from(catalog_names)),
+                Arc::new(schema_lists),
+            ],
+        )
+        .unwrap()
+    }
+
+    fn rendered_rows(batch: &RecordBatch) -> Vec<String> {
+        (0..batch.num_rows())
+            .map(|row| {
+                (0..batch.num_columns())
+                    .map(|column_index| {
+                        let column = batch.column(column_index);
+                        if column.is_null(row) {
+                            "NULL".to_string()
+                        } else {
+                            array_value_to_string(column, row).unwrap()
+                        }
+                    })
+                    .collect::<Vec<_>>()
+                    .join(" | ")
+            })
+            .collect()
+    }
+
+    fn column_names(batch: &RecordBatch) -> Vec<String> {
+        batch
+            .schema()
+            .fields()
+            .iter()
+            .map(|field| field.name().to_string())
+            .collect()
+    }
 
     /// Build a RecordBatch matching the ADBC `get_info` schema from a list of
     /// `(info_name, string_value)` pairs. `None` values are stored as null
@@ -486,6 +606,162 @@ mod tests {
         let merged = merge_options(base, overrides);
         assert_eq!(merged.len(), 2);
     }
+
+    #[test]
+    fn test_flatten_objects_rows_are_sorted() {
+        let batch = make_objects_batch(&[
+            (
+                Some("zeta"),
+                Some(vec![(Some("main"), Some(vec![("t1", "BASE TABLE")]))]),
+            ),
+            (
+                Some("alpha"),
+                Some(vec![
+                    (Some("s2"), Some(vec![("b", "VIEW"), ("a", "BASE TABLE")])),
+                    (Some("s1"), Some(vec![])),
+                ]),
+            ),
+        ]);
+
+        assert_eq!(
+            rendered_rows(&flatten_objects(&[batch]).unwrap()),
+            vec![
+                "alpha | s1 | NULL | NULL",
+                "alpha | s2 | a | BASE TABLE",
+                "alpha | s2 | b | VIEW",
+                "zeta | main | t1 | BASE TABLE",
+            ]
+        );
+    }
+
+    #[test]
+    fn test_flatten_objects_null_children() {
+        let batch = make_objects_batch(&[
+            (Some("c1"), None),
+            (Some("c2"), Some(vec![(Some("s"), None)])),
+            (
+                None,
+                Some(vec![(None, Some(vec![("orphan", "BASE TABLE")]))]),
+            ),
+        ]);
+
+        assert_eq!(
+            rendered_rows(&flatten_objects(&[batch]).unwrap()),
+            vec![
+                "NULL | NULL | orphan | BASE TABLE",
+                "c1 | NULL | NULL | NULL",
+                "c2 | s | NULL | NULL",
+            ]
+        );
+    }
+
+    #[test]
+    fn test_flatten_objects_multiple_batches() {
+        let first = make_objects_batch(&[(
+            Some("b"),
+            Some(vec![(Some("main"), Some(vec![("t", "BASE TABLE")]))]),
+        )]);
+        let second = make_objects_batch(&[(
+            Some("a"),
+            Some(vec![(Some("main"), Some(vec![("t", "VIEW")]))]),
+        )]);
+
+        assert_eq!(
+            rendered_rows(&flatten_objects(&[first, second]).unwrap()),
+            vec!["a | main | t | VIEW", "b | main | t | BASE TABLE"]
+        );
+    }
+
+    #[test]
+    fn test_flatten_objects_empty() {
+        let batch = flatten_objects(&[]).unwrap();
+        assert_eq!(batch.num_rows(), 0);
+        assert_eq!(
+            column_names(&batch),
+            vec!["catalog", "db_schema", "table", "table_type"]
+        );
+    }
+
+    #[test]
+    fn test_flatten_objects_without_db_schemas_column() {
+        let batch = RecordBatch::try_new(
+            Arc::new(Schema::new(vec![Field::new(
+                "catalog_name",
+                DataType::Utf8,
+                true,
+            )])),
+            vec![Arc::new(StringArray::from(vec![Some("only")]))],
+        )
+        .unwrap();
+
+        assert_eq!(
+            rendered_rows(&flatten_objects(&[batch]).unwrap()),
+            vec!["only | NULL | NULL | NULL"]
+        );
+    }
+
+    #[test]
+    fn test_flatten_objects_rejects_unexpected_type() {
+        let batch = RecordBatch::try_new(
+            Arc::new(Schema::new(vec![
+                Field::new("catalog_name", DataType::Utf8, true),
+                Field::new("catalog_db_schemas", DataType::Utf8, true),
+            ])),
+            vec![
+                Arc::new(StringArray::from(vec![Some("c")])),
+                Arc::new(StringArray::from(vec![Some("not a list")])),
+            ],
+        )
+        .unwrap();
+
+        let err = flatten_objects(&[batch]).unwrap_err();
+        assert!(err.contains("catalog_db_schemas"), "{err}");
+    }
+
+    #[test]
+    fn test_schema_to_batch() {
+        let schema = Schema::new(vec![
+            Field::new("a", DataType::Int32, false),
+            Field::new("b", DataType::Utf8, true),
+        ]);
+        let batch = schema_to_batch(&schema).unwrap();
+
+        assert_eq!(column_names(&batch), vec!["column", "type", "nullable"]);
+        assert_eq!(
+            rendered_rows(&batch),
+            vec!["a | Int32 | false", "b | Utf8 | true"]
+        );
+    }
+
+    #[test]
+    fn test_schema_to_batch_type_rendering() {
+        let schema = Schema::new(vec![
+            Field::new(
+                "ts",
+                DataType::Timestamp(TimeUnit::Microsecond, Some("UTC".into())),
+                true,
+            ),
+            Field::new("amount", DataType::Decimal128(10, 2), true),
+            Field::new("tags", DataType::new_list(DataType::Utf8, true), true),
+        ]);
+        let batch = schema_to_batch(&schema).unwrap();
+
+        assert_eq!(
+            rendered_rows(&batch),
+            vec![
+                "ts | Timestamp(µs, \"UTC\") | true",
+                "amount | Decimal128(10, 2) | true",
+                "tags | List(Utf8) | true",
+            ]
+        );
+    }
+
+    #[test]
+    fn test_schema_to_batch_empty_schema() {
+        let batch = schema_to_batch(&Schema::empty()).unwrap();
+        assert_eq!(batch.num_rows(), 0);
+        assert_eq!(column_names(&batch), vec!["column", "type", "nullable"]);
+    }
 }
 
 pub fn execute_query(
@@ -513,4 +789,210 @@ pub fn execute_query(
         .map_err(|e| format!("Failed to collect batches: {e}"))?;
 
     Ok(batches)
+}
+
+pub fn get_objects(
+    connection: &impl Connection,
+    catalog: Option<&str>,
+    db_schema: Option<&str>,
+    table_name: Option<&str>,
+) -> Result<Vec<RecordBatch>, String> {
+    let reader = connection
+        .get_objects(
+            ObjectDepth::Tables,
+            catalog,
+            db_schema,
+            table_name,
+            None,
+            None,
+        )
+        .map_err(|e| format!("Failed to get objects: {e}"))?;
+
+    let batches: Vec<RecordBatch> = reader
+        .collect::<Result<_, _>>()
+        .map_err(|e| format!("Failed to collect objects: {e}"))?;
+
+    Ok(vec![flatten_objects(&batches)?])
+}
+
+pub fn get_table_schema(
+    connection: &impl Connection,
+    catalog: Option<&str>,
+    db_schema: Option<&str>,
+    table_name: &str,
+) -> Result<Vec<RecordBatch>, String> {
+    let schema = connection
+        .get_table_schema(catalog, db_schema, table_name)
+        .map_err(|e| format!("Failed to get table schema: {e}"))?;
+
+    Ok(vec![schema_to_batch(&schema)?])
+}
+
+type ObjectRow = (
+    Option<String>,
+    Option<String>,
+    Option<String>,
+    Option<String>,
+);
+
+fn flatten_objects(batches: &[RecordBatch]) -> Result<RecordBatch, String> {
+    let mut rows: Vec<ObjectRow> = Vec::new();
+
+    for batch in batches {
+        let catalog_names = batch.column_by_name("catalog_name");
+        let schema_lists = batch.column_by_name("catalog_db_schemas");
+
+        for row in 0..batch.num_rows() {
+            let catalog = optional_string(catalog_names, row)?;
+
+            let Some(schemas) = list_element(schema_lists, row, "catalog_db_schemas")? else {
+                rows.push((catalog, None, None, None));
+                continue;
+            };
+            let Some(schemas) = schemas.as_struct_opt() else {
+                return Err(unexpected_type("catalog_db_schemas", schemas.data_type()));
+            };
+
+            let schema_names = schemas.column_by_name("db_schema_name");
+            let table_lists = schemas.column_by_name("db_schema_tables");
+
+            for schema_index in 0..schemas.len() {
+                if schemas.is_null(schema_index) {
+                    rows.push((catalog.clone(), None, None, None));
+                    continue;
+                }
+                let db_schema = optional_string(schema_names, schema_index)?;
+
+                let Some(tables) = list_element(table_lists, schema_index, "db_schema_tables")?
+                else {
+                    rows.push((catalog.clone(), db_schema, None, None));
+                    continue;
+                };
+                let Some(tables) = tables.as_struct_opt() else {
+                    return Err(unexpected_type("db_schema_tables", tables.data_type()));
+                };
+
+                let table_names = tables.column_by_name("table_name");
+                let table_types = tables.column_by_name("table_type");
+
+                for table_index in 0..tables.len() {
+                    if tables.is_null(table_index) {
+                        continue;
+                    }
+                    rows.push((
+                        catalog.clone(),
+                        db_schema.clone(),
+                        optional_string(table_names, table_index)?,
+                        optional_string(table_types, table_index)?,
+                    ));
+                }
+            }
+        }
+    }
+
+    rows.sort_by(|left, right| (&left.0, &left.1, &left.2).cmp(&(&right.0, &right.1, &right.2)));
+
+    let mut catalogs = Vec::with_capacity(rows.len());
+    let mut db_schemas = Vec::with_capacity(rows.len());
+    let mut tables = Vec::with_capacity(rows.len());
+    let mut table_types = Vec::with_capacity(rows.len());
+    for (catalog, db_schema, table, table_type) in rows {
+        catalogs.push(catalog);
+        db_schemas.push(db_schema);
+        tables.push(table);
+        table_types.push(table_type);
+    }
+
+    let schema = Arc::new(Schema::new(vec![
+        Field::new("catalog", DataType::Utf8, true),
+        Field::new("db_schema", DataType::Utf8, true),
+        Field::new("table", DataType::Utf8, true),
+        Field::new("table_type", DataType::Utf8, true),
+    ]));
+
+    RecordBatch::try_new(
+        schema,
+        vec![
+            Arc::new(StringArray::from(catalogs)),
+            Arc::new(StringArray::from(db_schemas)),
+            Arc::new(StringArray::from(tables)),
+            Arc::new(StringArray::from(table_types)),
+        ],
+    )
+    .map_err(|e| format!("Failed to build the object table: {e}"))
+}
+
+fn schema_to_batch(table_schema: &Schema) -> Result<RecordBatch, String> {
+    let field_count = table_schema.fields().len();
+    let mut names = Vec::with_capacity(field_count);
+    let mut types = Vec::with_capacity(field_count);
+    let mut nullable = Vec::with_capacity(field_count);
+
+    for field in table_schema.fields() {
+        names.push(field.name().to_string());
+        types.push(field.data_type().to_string());
+        nullable.push(field.is_nullable());
+    }
+
+    let schema = Arc::new(Schema::new(vec![
+        Field::new("column", DataType::Utf8, false),
+        Field::new("type", DataType::Utf8, false),
+        Field::new("nullable", DataType::Boolean, false),
+    ]));
+
+    RecordBatch::try_new(
+        schema,
+        vec![
+            Arc::new(StringArray::from(names)),
+            Arc::new(StringArray::from(types)),
+            Arc::new(BooleanArray::from(nullable)),
+        ],
+    )
+    .map_err(|e| format!("Failed to build the schema table: {e}"))
+}
+
+fn optional_string(column: Option<&ArrayRef>, index: usize) -> Result<Option<String>, String> {
+    let Some(column) = column else {
+        return Ok(None);
+    };
+    if column.is_null(index) {
+        return Ok(None);
+    }
+    array_value_to_string(column, index)
+        .map(Some)
+        .map_err(|e| format!("Failed to read object metadata: {e}"))
+}
+
+fn list_element(
+    column: Option<&ArrayRef>,
+    index: usize,
+    name: &str,
+) -> Result<Option<ArrayRef>, String> {
+    let Some(column) = column else {
+        return Ok(None);
+    };
+
+    let element = if let Some(list) = column.as_list_opt::<i32>() {
+        if list.is_null(index) {
+            return Ok(None);
+        }
+        list.value(index)
+    } else if let Some(list) = column.as_list_opt::<i64>() {
+        if list.is_null(index) {
+            return Ok(None);
+        }
+        list.value(index)
+    } else {
+        return Err(unexpected_type(name, column.data_type()));
+    };
+
+    if element.is_empty() {
+        Ok(None)
+    } else {
+        Ok(Some(element))
+    }
+}
+
+fn unexpected_type(name: &str, data_type: &DataType) -> String {
+    format!("Unexpected type for column '{name}': {data_type}")
 }
