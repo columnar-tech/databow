@@ -5,7 +5,9 @@ use arrow_array::RecordBatch;
 use arrow_cast::display::array_value_to_string;
 use arrow_schema::ArrowError;
 use clap::ValueEnum;
-use comfy_table::{Cell, ContentArrangement, Table, presets};
+use comfy_table::{
+    Cell, ContentArrangement, ContentLineStyle, LineStyle, Table, TableStyle, presets,
+};
 use std::fmt;
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, ValueEnum)]
@@ -27,8 +29,19 @@ pub enum TableMode {
     Nothing,
 }
 
+/// Hand-port of the `"││──├─┼┤│    ┬┴┌┐└┘"` preset string used before
+/// comfy-table 8 replaced string presets with [`TableStyle`]: a UTF8 table with
+/// outer borders and a header separator, but no separators between content rows.
+/// `test_utf8_compact_exact_rendering` pins the resulting output.
+const UTF8_COMPACT: TableStyle = TableStyle::new()
+    .top_border(LineStyle::new('┌', '─', '┬', '┐'))
+    .header_lines(ContentLineStyle::new('│', '│', '│'))
+    .header_separator(LineStyle::new('├', '─', '┼', '┤'))
+    .content_lines(ContentLineStyle::new('│', '│', '│'))
+    .bottom_border(LineStyle::new('└', '─', '┴', '┘'));
+
 impl TableMode {
-    fn as_preset(self) -> &'static str {
+    fn as_style(self) -> TableStyle {
         match self {
             Self::AsciiBordersOnly => presets::ASCII_BORDERS_ONLY,
             Self::AsciiBordersOnlyCondensed => presets::ASCII_BORDERS_ONLY_CONDENSED,
@@ -39,7 +52,7 @@ impl TableMode {
             Self::AsciiNoBorders => presets::ASCII_NO_BORDERS,
             Self::Nothing => presets::NOTHING,
             Self::Utf8BordersOnly => presets::UTF8_BORDERS_ONLY,
-            Self::Utf8Compact => "││──├─┼┤│    ┬┴┌┐└┘",
+            Self::Utf8Compact => UTF8_COMPACT,
             Self::Utf8Full => presets::UTF8_FULL,
             Self::Utf8FullCondensed => presets::UTF8_FULL_CONDENSED,
             Self::Utf8HorizontalOnly => presets::UTF8_HORIZONTAL_ONLY,
@@ -67,7 +80,7 @@ pub fn print_batches(results: &[RecordBatch], mode: TableMode) -> Result<(), Arr
 
 fn create_table(results: &[RecordBatch], mode: TableMode) -> Result<Table, ArrowError> {
     let mut table = Table::new();
-    table.load_preset(mode.as_preset());
+    table.load_style(mode.as_style());
     table.set_content_arrangement(ContentArrangement::Dynamic);
 
     if results.is_empty() {
@@ -332,5 +345,24 @@ mod tests {
             // All modes should still contain the data
             assert!(table_str.contains("Alice"), "Mode {:?} missing data", mode);
         }
+    }
+
+    /// `Utf8Compact` is the default mode and its style is defined by hand in this
+    /// module rather than supplied by comfy-table, so assert the exact rendering to
+    /// catch any accidental change to a border character.
+    #[test]
+    fn test_utf8_compact_exact_rendering() {
+        let table = create_table(&[create_test_batch()], TableMode::Utf8Compact).unwrap();
+        let expected = [
+            "┌────┬─────────┐",
+            "│ id │ name    │",
+            "├────┼─────────┤",
+            "│ 1  │ Alice   │",
+            "│ 2  │ Bob     │",
+            "│ 3  │ Charlie │",
+            "└────┴─────────┘",
+        ]
+        .join("\n");
+        assert_eq!(table.to_string(), expected);
     }
 }
