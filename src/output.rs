@@ -7,6 +7,8 @@ use arrow::json::writer::{JsonArray, LineDelimited, Writer as JsonWriter};
 use arrow_array::RecordBatch;
 use arrow_schema::ArrowError;
 use parquet::arrow::ArrowWriter;
+use parquet::basic::Compression;
+use parquet::file::properties::WriterProperties;
 use std::fs::File;
 use std::path::Path;
 
@@ -115,16 +117,14 @@ fn write_parquet(batches: &[RecordBatch], file: File) -> Result<(), ArrowError> 
         return Ok(());
     }
     let schema = batches[0].schema();
-    let mut writer = ArrowWriter::try_new(file, schema, None)
-        .map_err(|e| ArrowError::ExternalError(Box::new(e)))?;
+    let props = WriterProperties::builder()
+        .set_compression(Compression::SNAPPY)
+        .build();
+    let mut writer = ArrowWriter::try_new(file, schema, Some(props))?;
     for batch in batches {
-        writer
-            .write(batch)
-            .map_err(|e| ArrowError::ExternalError(Box::new(e)))?;
+        writer.write(batch)?;
     }
-    writer
-        .close()
-        .map_err(|e| ArrowError::ExternalError(Box::new(e)))?;
+    writer.close()?;
 
     Ok(())
 }
@@ -361,10 +361,11 @@ mod tests {
 
         // Verify by reading it back
         let file = File::open(&path).unwrap();
-        let reader = ParquetRecordBatchReaderBuilder::try_new(file)
-            .unwrap()
-            .build()
-            .unwrap();
+        let builder = ParquetRecordBatchReaderBuilder::try_new(file).unwrap();
+        for column in builder.metadata().row_group(0).columns() {
+            assert_eq!(column.compression(), Compression::SNAPPY);
+        }
+        let reader = builder.build().unwrap();
         let read_batches: Vec<RecordBatch> = reader.map(|r| r.unwrap()).collect();
 
         let total_rows: usize = read_batches.iter().map(|b| b.num_rows()).sum();
