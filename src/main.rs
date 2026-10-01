@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 mod cli;
+mod command;
 mod database;
 mod highlighter;
 mod output;
@@ -48,17 +49,39 @@ fn main() {
         QuerySource::Interactive => unreachable!(),
     };
 
-    let mut connection = database::initialize_connection(connection).unwrap_or_else(|e| {
+    let trimmed = sql.trim();
+    if trimmed.starts_with(':') && trimmed.contains('\n') {
+        eprintln!("Error: commands cannot be combined with SQL in --file or stdin input");
+        exit(1);
+    }
+
+    let parsed = command::parse(&sql).unwrap_or_else(|e| {
         eprintln!("{e}");
         exit(1);
     });
-    let batches = database::execute_query(&mut connection, &sql).unwrap_or_else(|e| {
-        eprintln!("{e}");
-        exit(1);
-    });
-    if let Err(e) = output_results(&batches, table_mode, output_path.as_deref()) {
-        eprintln!("{e}");
-        exit(1);
+
+    match parsed {
+        command::Command::Help => {
+            println!("{}", command::HELP);
+            if output_path.is_some() {
+                eprintln!("No output file was written: ':help' produces no results");
+            }
+        }
+        command::Command::Quit => {}
+        parsed => {
+            let mut connection = database::initialize_connection(connection).unwrap_or_else(|e| {
+                eprintln!("{e}");
+                exit(1);
+            });
+            let batches = command::run(&mut connection, parsed).unwrap_or_else(|e| {
+                eprintln!("{e}");
+                exit(1);
+            });
+            if let Err(e) = output_results(&batches, table_mode, output_path.as_deref()) {
+                eprintln!("{e}");
+                exit(1);
+            }
+        }
     }
 }
 

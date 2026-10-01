@@ -108,6 +108,33 @@ $ databow --profile warehouse --mode ascii-markdown
 | Adelie    | 152          |
 ```
 
+### Commands
+
+A line starting with `:` is a command instead of a query. `:get-objects` lists catalogs, schemas and tables. `:get-schema` shows the columns of one table.
+
+```console
+$ databow --profile warehouse
+> :get-objects warehouse.main.%
+┌───────────┬───────────┬──────────┬────────────┐
+│ catalog   │ db_schema │ table    │ table_type │
+├───────────┼───────────┼──────────┼────────────┤
+│ warehouse │ main      │ adelie   │ VIEW       │
+│ warehouse │ main      │ penguins │ BASE TABLE │
+└───────────┴───────────┴──────────┴────────────┘
+> :get-schema penguins
+┌────────────────┬─────────┬──────────┐
+│ column         │ type    │ nullable │
+├────────────────┼─────────┼──────────┤
+│ species        │ Utf8    │ true     │
+│ island         │ Utf8    │ true     │
+│ bill_length_mm │ Float64 │ true     │
+│ body_mass_g    │ Int32   │ true     │
+│ year           │ Int32   │ true     │
+└────────────────┴─────────┴──────────┘
+```
+
+Type `:help` for the full list, and `:quit` to exit. The [commands reference](/reference/#commands) documents each one.
+
 ## Non-interactive Usage
 
 The [`--query` argument](/reference/#-query) can be used to execute a query and exit:
