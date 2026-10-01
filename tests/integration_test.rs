@@ -479,3 +479,27 @@ fn test_timestamp_with_time_zone() {
         stdout
     );
 }
+
+#[test]
+fn test_invalid_output_extension_fails_before_connect() {
+    let output = Command::new("cargo")
+        .args([
+            "run",
+            "--",
+            "--driver",
+            "nonexistent_driver",
+            "--query",
+            "SELECT 1",
+            "--output",
+            "out.xyz",
+        ])
+        .output()
+        .expect("Failed to execute command");
+
+    // Exit code 2 and "invalid value" come from clap argument parsing,
+    // which happens before any connection attempt.
+    assert_eq!(output.status.code(), Some(2));
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("invalid value 'out.xyz' for '--output <file>'"));
+    assert!(stderr.contains("Unsupported file extension"));
+}

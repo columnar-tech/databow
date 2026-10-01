@@ -21,7 +21,7 @@ A command-line tool for querying databases via [ADBC](https://arrow.apache.org/a
 - **Interactive SQL shell** - Execute SQL queries with command history and intuitive navigation
 - **Syntax highlighting** - SQL queries highlighted for improved readability
 - **Formatted output** - Results displayed in clean, aligned tables with dynamic column width
-- **File export** - Export query results to JSON, CSV, or Arrow IPC files
+- **File export** - Export query results to JSON, JSON lines, CSV, Arrow IPC, or Parquet files
 - **Fast and lightweight** - Built in Rust for high performance and minimal resource usage
 
 ## Installation
@@ -107,8 +107,11 @@ Execute a query and output the result to a file:
 
 ```sh
 databow --driver duckdb --query "SELECT 42 AS the_answer" --output result.json
+databow --driver duckdb --query "SELECT 42 AS the_answer" --output result.jsonl
 databow --driver duckdb --query "SELECT 42 AS the_answer" --output result.csv
 databow --driver duckdb --query "SELECT 42 AS the_answer" --output result.arrow
+databow --driver duckdb --query "SELECT 42 AS the_answer" --output result.arrows
+databow --driver duckdb --query "SELECT 42 AS the_answer" --output result.parquet
 ```
 
 ## Reference
