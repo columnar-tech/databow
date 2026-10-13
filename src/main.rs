@@ -15,17 +15,19 @@ use std::process::exit;
 fn main() {
     let AppConfig {
         connection,
+        statement_options,
         query_source,
         table_mode,
         output_path,
     } = parse_args();
+    let statement_options = database::build_statement_options(statement_options);
 
     if matches!(query_source, QuerySource::Interactive) {
         let connection = database::initialize_connection(connection).unwrap_or_else(|e| {
             eprintln!("{e}");
             exit(1);
         });
-        repl::run_repl(connection, table_mode);
+        repl::run_repl(connection, table_mode, &statement_options);
         return;
     }
 
@@ -52,10 +54,11 @@ fn main() {
         eprintln!("{e}");
         exit(1);
     });
-    let batches = database::execute_query(&mut connection, &sql).unwrap_or_else(|e| {
-        eprintln!("{e}");
-        exit(1);
-    });
+    let batches = database::execute_query(&mut connection, &sql, &statement_options)
+        .unwrap_or_else(|e| {
+            eprintln!("{e}");
+            exit(1);
+        });
     if let Err(e) = output_results(&batches, table_mode, output_path.as_deref()) {
         eprintln!("{e}");
         exit(1);

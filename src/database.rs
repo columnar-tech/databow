@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::cli::ConnectionSource;
-use adbc_core::options::{AdbcVersion, InfoCode, OptionDatabase, OptionValue};
-use adbc_core::{Connection, Database, Driver, LOAD_FLAG_DEFAULT, Statement};
+use adbc_core::options::{AdbcVersion, InfoCode, OptionDatabase, OptionStatement, OptionValue};
+use adbc_core::{Connection, Database, Driver, LOAD_FLAG_DEFAULT, Optionable, Statement};
 use adbc_driver_manager::profile::{
     ConnectionProfile, ConnectionProfileProvider, FilesystemProfileProvider, process_profile_value,
 };
@@ -292,6 +292,22 @@ fn build_database_options(
     db_options
 }
 
+/// Convert CLI `key=value` pairs into ADBC statement options. Standard ADBC
+/// keys map to their dedicated variants; all other keys are driver-specific.
+pub fn build_statement_options(
+    options: Vec<(String, String)>,
+) -> Vec<(OptionStatement, OptionValue)> {
+    options
+        .into_iter()
+        .map(|(key, value)| {
+            (
+                OptionStatement::from(key.as_str()),
+                OptionValue::String(value),
+            )
+        })
+        .collect()
+}
+
 /// Merge two sets of database options. Options from `overrides` take precedence.
 fn merge_options(
     base: Vec<(OptionDatabase, OptionValue)>,
@@ -439,6 +455,27 @@ mod tests {
     }
 
     #[test]
+    fn test_build_statement_options_empty() {
+        assert!(build_statement_options(vec![]).is_empty());
+    }
+
+    #[test]
+    fn test_build_statement_options_standard_and_custom() {
+        let options = build_statement_options(vec![
+            (
+                "adbc.ingest.mode".to_string(),
+                "adbc.ingest.mode.append".to_string(),
+            ),
+            ("custom_key".to_string(), "custom_value".to_string()),
+        ]);
+        assert_eq!(options.len(), 2);
+        assert!(matches!(options[0].0, OptionStatement::IngestMode));
+        assert!(matches!(&options[0].1, OptionValue::String(s) if s == "adbc.ingest.mode.append"));
+        assert!(matches!(&options[1].0, OptionStatement::Other(k) if k == "custom_key"));
+        assert!(matches!(&options[1].1, OptionValue::String(s) if s == "custom_value"));
+    }
+
+    #[test]
     fn test_merge_options_empty_base() {
         let base = vec![];
         let overrides = vec![(OptionDatabase::Uri, OptionValue::String("uri".to_string()))];
@@ -491,6 +528,7 @@ mod tests {
 pub fn execute_query(
     connection: &mut impl adbc_core::Connection,
     sql: &str,
+    statement_options: &[(OptionStatement, OptionValue)],
 ) -> Result<Vec<RecordBatch>, String> {
     if sql.trim().is_empty() {
         return Ok(vec![]);
@@ -499,6 +537,12 @@ pub fn execute_query(
     let mut statement = connection
         .new_statement()
         .map_err(|e| format!("Failed to create statement: {e}"))?;
+
+    for (key, value) in statement_options {
+        statement
+            .set_option(key.clone(), value.clone())
+            .map_err(|e| format!("Failed to set statement option '{}': {e}", key.as_ref()))?;
+    }
 
     statement
         .set_sql_query(sql)

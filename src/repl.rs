@@ -5,6 +5,7 @@ use crate::database;
 use crate::highlighter::SyntectHighlighter;
 use crate::table::{TableMode, print_batches};
 use adbc_core::Connection;
+use adbc_core::options::{OptionStatement, OptionValue};
 use reedline::{
     Prompt, PromptEditMode, PromptHistorySearch, Reedline, Signal, ValidationResult, Validator,
 };
@@ -67,7 +68,11 @@ fn format_banner(version: &str, vendor: &database::VendorInfo) -> String {
     banner
 }
 
-pub fn run_repl(mut connection: impl Connection, table_mode: TableMode) {
+pub fn run_repl(
+    mut connection: impl Connection,
+    table_mode: TableMode,
+    statement_options: &[(OptionStatement, OptionValue)],
+) {
     let vendor = database::get_vendor_info(&connection);
     println!("{}", format_banner(env!("CARGO_PKG_VERSION"), &vendor));
 
@@ -88,7 +93,8 @@ pub fn run_repl(mut connection: impl Connection, table_mode: TableMode) {
                 }
 
                 let sql = buffer.trim_end().trim_end_matches(';');
-                let batches = match database::execute_query(&mut connection, sql) {
+                let batches = match database::execute_query(&mut connection, sql, statement_options)
+                {
                     Ok(batches) => batches,
                     Err(err) => {
                         eprintln!("{err}");

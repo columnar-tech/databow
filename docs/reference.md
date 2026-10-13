@@ -57,6 +57,14 @@ Driver-specific database option
 databow --driver duckdb --option path=file.db
 ```
 
+## --statement-option
+
+Driver-specific statement option, applied to every statement executed
+
+```sh
+databow --driver postgresql --uri postgresql://crate@localhost:5432/crate --statement-option adbc.postgresql.use_copy=false
+```
+
 ## --mode
 
 Table display style

@@ -96,6 +96,51 @@ fn test_no_driver_no_scheme_uri_errors() {
 }
 
 #[test]
+fn test_statement_option_rejected_by_driver() {
+    let output = Command::new("cargo")
+        .args([
+            "run",
+            "--",
+            "--driver",
+            "duckdb",
+            "--statement-option",
+            "bogus=1",
+            "--query",
+            "SELECT 1",
+        ])
+        .output()
+        .expect("Failed to execute command");
+
+    assert!(!output.status.success());
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains("Failed to set statement option 'bogus'"),
+        "stderr: {stderr}"
+    );
+}
+
+#[test]
+fn test_statement_option_invalid_format() {
+    let output = Command::new("cargo")
+        .args([
+            "run",
+            "--",
+            "--driver",
+            "duckdb",
+            "--statement-option",
+            "novalue",
+            "--query",
+            "SELECT 1",
+        ])
+        .output()
+        .expect("Failed to execute command");
+
+    assert!(!output.status.success());
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("Invalid option format"), "stderr: {stderr}");
+}
+
+#[test]
 fn test_file_argument() {
     // Create a temporary SQL file
     let mut temp_file = NamedTempFile::new().expect("Failed to create temp file");

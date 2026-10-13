@@ -34,6 +34,7 @@ pub enum ConnectionSource {
 
 pub struct AppConfig {
     pub connection: ConnectionSource,
+    pub statement_options: Vec<(String, String)>,
     pub query_source: QuerySource,
     pub table_mode: TableMode,
     pub output_path: Option<PathBuf>,
@@ -65,6 +66,11 @@ pub fn parse_args() -> AppConfig {
         Arg::new("option")
             .long("option")
             .help("Driver-specific database option")
+            .action(ArgAction::Append),
+        Arg::new("statement-option")
+            .long("statement-option")
+            .value_name("option")
+            .help("Driver-specific statement option")
             .action(ArgAction::Append),
         Arg::new("mode")
             .long("mode")
@@ -99,18 +105,8 @@ pub fn parse_args() -> AppConfig {
     let username = matches.get_one::<String>("username").cloned();
     let password = matches.get_one::<String>("password").cloned();
 
-    let mut options = Vec::new();
-    if let Some(option_values) = matches.get_many::<String>("option") {
-        for option in option_values {
-            match parse_option(option) {
-                Ok((key, value)) => options.push((key, value)),
-                Err(err) => {
-                    eprintln!("{err}");
-                    exit(1);
-                }
-            }
-        }
-    }
+    let options = collect_options(&matches, "option");
+    let statement_options = collect_options(&matches, "statement-option");
 
     // Build ConnectionSource based on whether --profile or --driver was provided
     let connection = if let Some(profile) = profile {
@@ -171,10 +167,27 @@ pub fn parse_args() -> AppConfig {
 
     AppConfig {
         connection,
+        statement_options,
         query_source,
         table_mode,
         output_path,
     }
+}
+
+/// Parse all `key=value` values supplied for the argument `id`, exiting with an
+/// error message if any value is malformed.
+fn collect_options(matches: &clap::ArgMatches, id: &str) -> Vec<(String, String)> {
+    let Some(values) = matches.get_many::<String>(id) else {
+        return Vec::new();
+    };
+    values
+        .map(|option| {
+            parse_option(option).unwrap_or_else(|err| {
+                eprintln!("{err}");
+                exit(1);
+            })
+        })
+        .collect()
 }
 
 fn uri_has_driver_scheme(uri: &str) -> bool {
@@ -329,6 +342,7 @@ mod tests {
                 password: Some("test_pass".to_string()),
                 options: vec![("key1".to_string(), "val1".to_string())],
             },
+            statement_options: vec![],
             query_source: QuerySource::Interactive,
             table_mode: TableMode::default(),
             output_path: None,
@@ -363,6 +377,7 @@ mod tests {
                 password: None,
                 options: vec![],
             },
+            statement_options: vec![],
             query_source: QuerySource::Interactive,
             table_mode: TableMode::AsciiMarkdown,
             output_path: None,
@@ -387,6 +402,7 @@ mod tests {
                 password: None,
                 options: vec![("extra".to_string(), "option".to_string())],
             },
+            statement_options: vec![],
             query_source: QuerySource::Query("SELECT 1".to_string()),
             table_mode: TableMode::default(),
             output_path: Some(PathBuf::from("output.json")),
