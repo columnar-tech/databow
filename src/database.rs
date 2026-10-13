@@ -9,7 +9,8 @@ use adbc_driver_manager::profile::{
 };
 use adbc_driver_manager::{ManagedConnection, ManagedDatabase, ManagedDriver};
 use arrow_array::cast::AsArray;
-use arrow_array::{Array, RecordBatch, UnionArray};
+use arrow_array::{Array, RecordBatch, RecordBatchReader, UnionArray};
+use arrow_schema::{Schema, SchemaRef};
 use std::collections::HashSet;
 
 /// Vendor (database product) metadata reported by an ADBC driver.
@@ -304,6 +305,44 @@ fn merge_options(
     merged
 }
 
+/// The result of executing a query: the result schema reported by the driver
+/// and the collected record batches (which may be empty).
+pub struct QueryResult {
+    pub schema: SchemaRef,
+    pub batches: Vec<RecordBatch>,
+}
+
+pub fn execute_query(
+    connection: &mut impl adbc_core::Connection,
+    sql: &str,
+) -> Result<QueryResult, String> {
+    if sql.trim().is_empty() {
+        return Ok(QueryResult {
+            schema: std::sync::Arc::new(Schema::empty()),
+            batches: vec![],
+        });
+    }
+
+    let mut statement = connection
+        .new_statement()
+        .map_err(|e| format!("Failed to create statement: {e}"))?;
+
+    statement
+        .set_sql_query(sql)
+        .map_err(|e| format!("Failed to set SQL query: {e}"))?;
+
+    let reader = statement
+        .execute()
+        .map_err(|e| format!("Failed to execute statement: {e}"))?;
+
+    let schema = reader.schema();
+    let batches: Vec<RecordBatch> = reader
+        .collect::<Result<_, _>>()
+        .map_err(|e| format!("Failed to collect batches: {e}"))?;
+
+    Ok(QueryResult { schema, batches })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -486,31 +525,4 @@ mod tests {
         let merged = merge_options(base, overrides);
         assert_eq!(merged.len(), 2);
     }
-}
-
-pub fn execute_query(
-    connection: &mut impl adbc_core::Connection,
-    sql: &str,
-) -> Result<Vec<RecordBatch>, String> {
-    if sql.trim().is_empty() {
-        return Ok(vec![]);
-    }
-
-    let mut statement = connection
-        .new_statement()
-        .map_err(|e| format!("Failed to create statement: {e}"))?;
-
-    statement
-        .set_sql_query(sql)
-        .map_err(|e| format!("Failed to set SQL query: {e}"))?;
-
-    let reader = statement
-        .execute()
-        .map_err(|e| format!("Failed to execute statement: {e}"))?;
-
-    let batches: Vec<RecordBatch> = reader
-        .collect::<Result<_, _>>()
-        .map_err(|e| format!("Failed to collect batches: {e}"))?;
-
-    Ok(batches)
 }

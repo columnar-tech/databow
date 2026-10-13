@@ -1,6 +1,7 @@
 // Copyright 2026 Columnar Technologies Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::output::OutputFormat;
 use crate::table::TableMode;
 use clap::{Arg, ArgAction, Command, value_parser};
 use std::path::PathBuf;
@@ -84,7 +85,8 @@ pub fn parse_args() -> AppConfig {
         Arg::new("output")
             .long("output")
             .help("Write result to file")
-            .value_name("file"),
+            .value_name("file")
+            .value_parser(parse_output_path),
     ];
     let command = Command::new("databow")
         .version(env!("CARGO_PKG_VERSION"))
@@ -163,7 +165,7 @@ pub fn parse_args() -> AppConfig {
         .copied()
         .unwrap_or_default();
 
-    let output_path = matches.get_one::<String>("output").map(PathBuf::from);
+    let output_path = matches.get_one::<PathBuf>("output").cloned();
     if output_path.is_some() && matches!(query_source, QuerySource::Interactive) {
         eprintln!("Error: --output cannot be used in interactive mode");
         exit(1);
@@ -175,6 +177,12 @@ pub fn parse_args() -> AppConfig {
         table_mode,
         output_path,
     }
+}
+
+fn parse_output_path(s: &str) -> Result<PathBuf, String> {
+    let path = PathBuf::from(s);
+    OutputFormat::from_path(&path)?;
+    Ok(path)
 }
 
 fn uri_has_driver_scheme(uri: &str) -> bool {
@@ -201,6 +209,26 @@ fn parse_option(option: &str) -> Result<(String, String), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_parse_output_path_valid() {
+        assert_eq!(
+            parse_output_path("out.parquet").unwrap(),
+            PathBuf::from("out.parquet")
+        );
+    }
+
+    #[test]
+    fn test_parse_output_path_unsupported_extension() {
+        let err = parse_output_path("out.xyz").unwrap_err();
+        assert!(err.contains("Unsupported file extension"));
+    }
+
+    #[test]
+    fn test_parse_output_path_no_extension() {
+        let err = parse_output_path("out").unwrap_err();
+        assert!(err.contains("no file extension"));
+    }
 
     #[test]
     fn test_connection_source_direct() {

@@ -51,31 +51,38 @@ fn main() {
         QuerySource::Interactive => unreachable!(),
     };
 
+    // A blank query has no result schema, so there is nothing meaningful to
+    // write; fail rather than silently producing an empty or garbage file.
+    if output_path.is_some() && sql.trim().is_empty() {
+        eprintln!("No query to execute; refusing to write an empty output file");
+        exit(1);
+    }
+
     let mut connection = database::initialize_connection(connection).unwrap_or_else(|e| {
         eprintln!("{e}");
         exit(1);
     });
-    let batches = database::execute_query(&mut connection, &sql).unwrap_or_else(|e| {
+    let result = database::execute_query(&mut connection, &sql).unwrap_or_else(|e| {
         eprintln!("{e}");
         exit(1);
     });
-    if let Err(e) = output_results(&batches, table_mode, output_path.as_deref()) {
+    if let Err(e) = output_results(&result, table_mode, output_path.as_deref()) {
         eprintln!("{e}");
         exit(1);
     }
 }
 
 fn output_results(
-    batches: &[arrow_array::RecordBatch],
+    result: &database::QueryResult,
     table_mode: table::TableMode,
     output_path: Option<&std::path::Path>,
 ) -> Result<(), String> {
     if let Some(path) = output_path {
-        output::write_batches_to_file(batches, path)
+        output::write_batches_to_file(&result.schema, &result.batches, path)
             .map_err(|e| format!("Failed to write output file: {e}"))
     } else {
         table::print_batches(
-            batches,
+            &result.batches,
             table::RenderOptions {
                 mode: table_mode,
                 ..Default::default()
