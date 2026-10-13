@@ -205,6 +205,20 @@ Connect to DuckDB (persistent):
 databow --driver duckdb --option path=data.db
 ```
 
+## Firebolt
+
+Install the Firebolt driver with dbc:
+
+```sh
+dbc install firebolt
+```
+
+Connect to Firebolt:
+
+```sh
+databow --driver firebolt --uri 'firebolt://localhost:3473?ssl_mode=disable'
+```
+
 ## GizmoSQL
 
 Install the Arrow Flight SQL driver with dbc:

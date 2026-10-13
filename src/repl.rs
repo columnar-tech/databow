@@ -95,7 +95,7 @@ pub fn run_repl(
                 let sql = buffer.trim_end().trim_end_matches(';');
                 let batches = match database::execute_query(&mut connection, sql, statement_options)
                 {
-                    Ok(batches) => batches,
+                    Ok(result) => result.batches,
                     Err(err) => {
                         eprintln!("{err}");
                         continue;
