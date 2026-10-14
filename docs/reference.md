@@ -191,7 +191,7 @@ When a result is wider than `.maxwidth`, long values are truncated with `…`; i
 | Argument | Description |
 |----------|-------------|
 | _(none)_ | Show the current value |
-| `WIDTH` | Limit tables to `WIDTH` columns (`0` for no limit) |
+| `WIDTH` | Limit tables to `WIDTH` characters (`0` for no limit) |
 | `default` | Restore the default |
 
 Results of queries run with `--query`, `--file`, or stdin are never truncated, and long values wrap to fit the terminal instead.
