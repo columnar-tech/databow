@@ -160,6 +160,8 @@ Show the last result in full, without truncation
 
 When the table is wide enough, the footer of a truncated result also includes the hint `use .last to show entire result`.
 
+The previous result is discarded when the next query starts, so after a query fails there is no result to show.
+
 ### .maxrows
 
 Show or set the maximum number of rows to display

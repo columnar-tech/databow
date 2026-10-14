@@ -110,6 +110,9 @@ pub fn run_repl(
                 }
 
                 let sql = buffer.trim_end().trim_end_matches(';');
+                // Free the previous result before running the next query so
+                // two full results are never held at once.
+                state.last_result = None;
                 let batches = match database::execute_query(&mut connection, sql) {
                     Ok(result) => result.batches,
                     Err(err) => {
