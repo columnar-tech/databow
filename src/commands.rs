@@ -160,7 +160,7 @@ pub fn parse(input: &str) -> Result<Command, String> {
                 .strip_prefix(".pager")
                 .unwrap_or_default()
                 .trim();
-            Command::Pager(PagerArg::Command(unquote(command).to_string()))
+            Command::Pager(PagerArg::Command(unquote(command)))
         }
         ("quit" | "exit", []) => Command::Quit,
         _ => return Err(usage()),
@@ -170,18 +170,27 @@ pub fn parse(input: &str) -> Result<Command, String> {
 
 /// Strip one pair of matching surrounding quotes, so that DuckDB-style
 /// `.pager 'less -S'` works. Values like `'a' 'b'`, where the outer quotes
-/// belong to separate quoted words, are left alone.
-fn unquote(value: &str) -> &str {
+/// belong to separate quoted words, are left alone. A quoted path to a
+/// program, like `"C:\Program Files\less.exe"`, keeps its quotes so that it
+/// reaches the shell as one word; `cmd` only understands double quotes, so on
+/// Windows single quotes are replaced.
+fn unquote(value: &str) -> String {
     for quote in ['\'', '"'] {
         if let Some(inner) = value
             .strip_prefix(quote)
             .and_then(|rest| rest.strip_suffix(quote))
             .filter(|inner| !inner.contains(quote))
         {
-            return inner;
+            if !pager::is_program_path(inner) {
+                return inner.to_string();
+            }
+            if cfg!(windows) {
+                return format!("\"{inner}\"");
+            }
+            break;
         }
     }
-    value
+    value.to_string()
 }
 
 fn is_row_threshold(keyword: &str) -> bool {
@@ -496,6 +505,34 @@ mod tests {
         assert_eq!(
             parse(".pager 'a' 'b'"),
             Ok(Command::Pager(PagerArg::Command("'a' 'b'".to_string())))
+        );
+        // A quoted path to an existing program keeps its quotes.
+        let dir = tempfile::tempdir().unwrap();
+        let program = dir.path().join(if cfg!(windows) {
+            "my pager.exe"
+        } else {
+            "my pager"
+        });
+        std::fs::write(&program, "").unwrap();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(&program, std::fs::Permissions::from_mode(0o755)).unwrap();
+        }
+        let quoted = format!("\"{}\"", program.display());
+        assert_eq!(
+            parse(&format!(".pager {quoted}")),
+            Ok(Command::Pager(PagerArg::Command(quoted.clone())))
+        );
+        let single = format!("'{}'", program.display());
+        let expected = if cfg!(windows) {
+            quoted
+        } else {
+            single.clone()
+        };
+        assert_eq!(
+            parse(&format!(".pager {single}")),
+            Ok(Command::Pager(PagerArg::Command(expected)))
         );
         assert_eq!(
             parse(r#".pager "C:\Program Files\less.exe" -S"#),
