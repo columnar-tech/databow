@@ -168,12 +168,12 @@ Show or set the maximum number of rows to display
 > .maxrows 100
 ```
 
-When a result has more rows than `.maxrows`, the first and last rows are shown with the rows in between elided, and a footer reports how many rows were shown. The default is `40` when writing to a terminal.
+When a result has more rows than `.maxrows`, the first and last rows are shown with the rows in between elided, and a footer reports how many rows were shown. Rows are only elided when that shortens the output: three divider rows stand in for the elided rows, so a result with up to `COUNT + 3` rows is shown in full. The default is `40` when writing to a terminal.
 
 | Argument | Description |
 |----------|-------------|
 | _(none)_ | Show the current value |
-| `COUNT` | Show at most `COUNT` rows (`0` for no limit) |
+| `COUNT` | Show `COUNT` rows of larger results (`0` for no limit) |
 | `default` | Restore the default |
 
 Results of queries run with `--query`, `--file`, or stdin are never truncated.
