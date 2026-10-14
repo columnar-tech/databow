@@ -109,6 +109,20 @@ Connect to BigQuery:
 databow --driver bigquery --option adbc.bigquery.sql.project_id=my-gcp-project --option adbc.bigquery.sql.dataset_id=bigquery-public-data
 ```
 
+## CedarDB
+
+Install the PostgreSQL driver with dbc:
+
+```sh
+dbc install postgresql
+```
+
+Connect to CedarDB:
+
+```sh
+databow --driver postgresql --uri postgresql://postgres:test@localhost:5432/postgres --statement-option adbc.postgresql.use_copy=false
+```
+
 ## chDB
 
 Install the chDB driver with dbc:
@@ -155,6 +169,34 @@ Connect to ClickHouse:
 
 ```sh
 databow --driver clickhouse --uri http://localhost:8123 --username user --password pass
+```
+
+## CockroachDB
+
+Install the PostgreSQL driver with dbc:
+
+```sh
+dbc install postgresql
+```
+
+Connect to CockroachDB:
+
+```sh
+databow --driver postgresql --uri postgresql://username:password@localhost:26257/db --statement-option adbc.postgresql.use_copy=false
+```
+
+## CrateDB
+
+Install the PostgreSQL driver with dbc:
+
+```sh
+dbc install postgresql
+```
+
+Connect to CrateDB:
+
+```sh
+databow --driver postgresql --uri postgresql://crate@localhost:5432/crate --statement-option adbc.postgresql.use_copy=false
 ```
 
 ## Databricks
