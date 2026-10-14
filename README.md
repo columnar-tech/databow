@@ -123,19 +123,19 @@ Query databases via ADBC
 Usage: databow [OPTIONS]
 
 Options:
-      --profile <profile>          Connection profile name or path
-      --driver <driver>            Driver name (inferred from --uri scheme or profile if not specified)
-      --uri <uri>                  Database uniform resource identifier
-      --username <username>        Database user username
-      --password <password>        Database user password
-      --option <option>            Driver-specific database option
-      --statement-option <option>  Driver-specific statement option
-      --mode <mode>                Table display style [default: utf8-compact]
-      --query <query>              Execute query and exit
-      --file <file>                Read and execute file and exit
-      --output <file>              Write result to file
-  -h, --help                       Print help
-  -V, --version                    Print version
+      --profile <profile>             Connection profile name or path
+      --driver <driver>               Driver name (inferred from --uri scheme or profile if not specified)
+      --uri <uri>                     Database uniform resource identifier
+      --username <username>           Database user username
+      --password <password>           Database user password
+      --option <key=value>            Driver-specific database option
+      --statement-option <key=value>  Driver-specific statement option
+      --mode <mode>                   Table display style [default: utf8-compact]
+      --query <query>                 Execute query and exit
+      --file <file>                   Read and execute file and exit
+      --output <file>                 Write result to file
+  -h, --help                          Print help
+  -V, --version                       Print version
 ```
 
 ## License

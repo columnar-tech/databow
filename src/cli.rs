@@ -66,11 +66,12 @@ pub fn parse_args() -> AppConfig {
             .help("Database user password"),
         Arg::new("option")
             .long("option")
+            .value_name("key=value")
             .help("Driver-specific database option")
             .action(ArgAction::Append),
         Arg::new("statement-option")
             .long("statement-option")
-            .value_name("option")
+            .value_name("key=value")
             .help("Driver-specific statement option")
             .action(ArgAction::Append),
         Arg::new("mode")
