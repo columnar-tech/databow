@@ -153,10 +153,16 @@ fn shell_command(command: &str) -> Command {
     cmd
 }
 
+/// `cmd` does its own parsing of the command line instead of the C runtime's,
+/// so the command must not be quoted by `Command::args`, which would pass
+/// `"C:\Program Files\less.exe" -S` as `"\"C:\Program Files\less.exe\" -S"`.
+/// With `/S`, `cmd` strips exactly one pair of outer quotes and runs the rest
+/// verbatim, so wrapping the command in quotes passes it through unchanged.
 #[cfg(windows)]
 fn shell_command(command: &str) -> Command {
+    use std::os::windows::process::CommandExt;
     let mut cmd = Command::new("cmd");
-    cmd.args(["/C", command]);
+    cmd.raw_arg(format!("/S /C \"{command}\""));
     cmd
 }
 
@@ -323,6 +329,38 @@ mod tests {
     #[test]
     fn test_run_pager_missing_command() {
         let err = run_pager("hello", "databow-no-such-pager 2>/dev/null").unwrap_err();
+        assert_eq!(err.kind(), io::ErrorKind::NotFound);
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn test_run_pager_writes_all_output() {
+        // A quoted program path and a quoted output path with a space: cmd
+        // must receive the command verbatim for this to work.
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("out file.txt");
+        let system_root = std::env::var("SystemRoot").unwrap();
+        let command = format!(
+            r#""{system_root}\System32\findstr.exe" "^" > "{}""#,
+            path.display()
+        );
+        run_pager("hello\nworld", &command).unwrap();
+        let output = std::fs::read_to_string(path).unwrap().replace("\r\n", "\n");
+        assert_eq!(output, "hello\nworld\n");
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn test_run_pager_quit_early() {
+        // A pager that exits without reading must not be an error.
+        let text = "x".repeat(1 << 20);
+        run_pager(&text, "exit 0").unwrap();
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn test_run_pager_missing_command() {
+        let err = run_pager("hello", "databow-no-such-pager 2>nul").unwrap_err();
         assert_eq!(err.kind(), io::ErrorKind::NotFound);
     }
 }
