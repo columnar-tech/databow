@@ -99,6 +99,21 @@ pub fn page(text: &str, command: &str) {
 }
 
 fn run_pager(text: &str, command: &str) -> io::Result<()> {
+    // The shell's exit code for a missing command is not reliable (`cmd`
+    // reports 1, the same as many failures), so look the program up first.
+    if let Some(program) = program_name(command)
+        && !program_exists(
+            &program,
+            std::env::var_os("PATH").as_deref(),
+            std::env::var_os("PATHEXT").as_deref(),
+        )
+    {
+        return Err(io::Error::new(
+            io::ErrorKind::NotFound,
+            format!("{program} not found"),
+        ));
+    }
+
     let mut cmd = shell_command(command);
     if let Some(less) = less_options(std::env::var_os("LESS").as_deref()) {
         cmd.env("LESS", less);
@@ -118,17 +133,175 @@ fn run_pager(text: &str, command: &str) -> io::Result<()> {
         .and_then(|()| stdin.write_all(b"\n"));
     // Close the pipe so the pager sees end of input.
     drop(stdin);
-    let status = child.wait()?;
+    // The pager's exit status is ignored: pagers may exit non-zero when quit
+    // early, and the output has been shown either way.
+    child.wait()?;
 
     match result {
         // The user quit the pager before reading all output.
         Err(err) if err.kind() == io::ErrorKind::BrokenPipe => {}
         other => other?,
     }
-    if status.code() == Some(COMMAND_NOT_FOUND) {
-        return Err(io::Error::new(io::ErrorKind::NotFound, "command not found"));
-    }
     Ok(())
+}
+
+/// The program a shell command runs: its first word, which may be quoted to
+/// contain spaces. Returns `None` when the program cannot be determined
+/// without a full shell, for example when it involves variables or globs, in
+/// which case the command is run without checking.
+fn program_name(command: &str) -> Option<String> {
+    let rest = command.trim_start();
+    // Skip `NAME=value` environment assignments, as in `LESS=FR less`.
+    #[cfg(not(windows))]
+    let rest = {
+        let mut rest = rest;
+        while let Some((word, after)) = rest.split_once(char::is_whitespace) {
+            let is_assignment = word.split_once('=').is_some_and(|(name, _)| {
+                !name.is_empty()
+                    && !name.starts_with(|c: char| c.is_ascii_digit())
+                    && name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
+            });
+            if !is_assignment || word.contains(['\'', '"']) {
+                break;
+            }
+            rest = after.trim_start();
+        }
+        rest
+    };
+
+    #[cfg(not(windows))]
+    const QUOTES: &[char] = &['\'', '"'];
+    #[cfg(windows)]
+    const QUOTES: &[char] = &['"'];
+    #[cfg(not(windows))]
+    const SPECIAL: &[char] = &['$', '`', '*', '?', '[', '~', '\\'];
+    #[cfg(windows)]
+    const SPECIAL: &[char] = &['%', '^', '*', '?'];
+    #[cfg(not(windows))]
+    const OPERATORS: &[char] = &[';', '&', '|', '<', '>', '(', ')'];
+    #[cfg(windows)]
+    const OPERATORS: &[char] = &['&', '|', '<', '>', '(', ')'];
+
+    let program = match rest.chars().next() {
+        Some(quote) if QUOTES.contains(&quote) => {
+            let inner = &rest[1..];
+            let end = inner.find(quote)?;
+            // A quoted word continued by more text, like `"a"b`, is left to
+            // the shell.
+            let after = &inner[end + 1..];
+            if !(after.is_empty() || after.starts_with(char::is_whitespace)) {
+                return None;
+            }
+            &inner[..end]
+        }
+        _ => {
+            let end = rest
+                .find(|c: char| c.is_whitespace() || OPERATORS.contains(&c))
+                .unwrap_or(rest.len());
+            let word = &rest[..end];
+            if word.contains(QUOTES) {
+                return None;
+            }
+            word
+        }
+    };
+    if program.is_empty() || program.contains(SPECIAL) || is_shell_builtin(program) {
+        return None;
+    }
+    Some(program.to_string())
+}
+
+/// Whether `word` is run by the shell itself rather than found on `PATH`, like
+/// `exec less` with `sh` or `type` with `cmd`.
+fn is_shell_builtin(word: &str) -> bool {
+    #[cfg(not(windows))]
+    const BUILTINS: &[&str] = &[
+        "!", ".", ":", "[[", "{", "alias", "break", "builtin", "case", "cd", "command", "continue",
+        "eval", "exec", "exit", "export", "for", "hash", "if", "local", "readonly", "return",
+        "set", "shift", "source", "time", "times", "trap", "type", "ulimit", "umask", "unset",
+        "until", "wait", "while",
+    ];
+    #[cfg(windows)]
+    const BUILTINS: &[&str] = &[
+        "assoc", "break", "call", "cd", "chdir", "cls", "color", "copy", "date", "del", "dir",
+        "echo", "endlocal", "erase", "exit", "for", "ftype", "goto", "if", "md", "mkdir", "mklink",
+        "move", "path", "pause", "popd", "prompt", "pushd", "rd", "rem", "ren", "rename", "rmdir",
+        "set", "setlocal", "shift", "start", "time", "title", "type", "ver", "verify", "vol",
+    ];
+    if cfg!(windows) {
+        BUILTINS.iter().any(|b| b.eq_ignore_ascii_case(word))
+    } else {
+        BUILTINS.contains(&word)
+    }
+}
+
+/// Whether `value` is a path (not a bare name) to an existing program.
+pub fn is_program_path(value: &str) -> bool {
+    has_separator(value) && program_exists(value, None, std::env::var_os("PATHEXT").as_deref())
+}
+
+/// Whether `program` names an executable, either as a path or by searching
+/// `path` (and on Windows, the current directory, trying the extensions in
+/// `pathext`).
+fn program_exists(
+    program: &str,
+    path: Option<&std::ffi::OsStr>,
+    pathext: Option<&std::ffi::OsStr>,
+) -> bool {
+    use std::path::{Path, PathBuf};
+
+    let mut candidates: Vec<PathBuf> = Vec::new();
+    if has_separator(program) {
+        candidates.push(PathBuf::from(program));
+    } else {
+        // `cmd` looks in the current directory before `PATH`.
+        if cfg!(windows) {
+            candidates.push(PathBuf::from(program));
+        }
+        if let Some(path) = path {
+            candidates.extend(std::env::split_paths(path).map(|dir| dir.join(program)));
+        }
+    }
+
+    if cfg!(windows) {
+        let pathext = pathext
+            .and_then(|value| value.to_str())
+            .filter(|value| !value.trim().is_empty())
+            .unwrap_or(".COM;.EXE;.BAT;.CMD");
+        let extensions: Vec<&str> = pathext.split(';').filter(|ext| !ext.is_empty()).collect();
+        let has_extension = Path::new(program).extension().is_some();
+        candidates.iter().any(|candidate| {
+            (has_extension && candidate.is_file())
+                || extensions.iter().any(|ext| {
+                    let mut with_ext = candidate.clone().into_os_string();
+                    with_ext.push(ext);
+                    Path::new(&with_ext).is_file()
+                })
+        })
+    } else {
+        candidates.iter().any(|candidate| is_executable(candidate))
+    }
+}
+
+/// Whether `program` is a path rather than a name to search for.
+fn has_separator(program: &str) -> bool {
+    if cfg!(windows) {
+        program.contains(['/', '\\', ':'])
+    } else {
+        program.contains('/')
+    }
+}
+
+#[cfg(unix)]
+fn is_executable(path: &std::path::Path) -> bool {
+    use std::os::unix::fs::PermissionsExt;
+    std::fs::metadata(path)
+        .is_ok_and(|meta| meta.is_file() && meta.permissions().mode() & 0o111 != 0)
+}
+
+#[cfg(not(unix))]
+fn is_executable(path: &std::path::Path) -> bool {
+    path.is_file()
 }
 
 /// Options for `less` passed via the `LESS` environment variable, so that a
@@ -139,12 +312,6 @@ const DEFAULT_LESS: &str = "SRX";
 fn less_options(existing: Option<&std::ffi::OsStr>) -> Option<&'static str> {
     existing.is_none().then_some(DEFAULT_LESS)
 }
-
-/// Exit code the shell reports for a missing command.
-#[cfg(not(windows))]
-const COMMAND_NOT_FOUND: i32 = 127;
-#[cfg(windows)]
-const COMMAND_NOT_FOUND: i32 = 9009;
 
 #[cfg(not(windows))]
 fn shell_command(command: &str) -> Command {
@@ -360,9 +527,91 @@ mod tests {
     #[cfg(windows)]
     #[test]
     fn test_run_pager_missing_command() {
-        // No `2>nul` here: with a redirection, cmd reports a missing command
-        // with exit code 1 instead of 9009.
-        let err = run_pager("hello", "databow-no-such-pager").unwrap_err();
+        let err = run_pager("hello", "databow-no-such-pager 2>nul").unwrap_err();
         assert_eq!(err.kind(), io::ErrorKind::NotFound);
+    }
+
+    #[test]
+    fn test_program_name() {
+        assert_eq!(program_name("less -SR").as_deref(), Some("less"));
+        assert_eq!(program_name("  more").as_deref(), Some("more"));
+        assert_eq!(program_name("cat>out.txt").as_deref(), Some("cat"));
+        assert_eq!(
+            program_name(r#""/opt/my pager/less" -S"#).as_deref(),
+            Some("/opt/my pager/less")
+        );
+        assert_eq!(program_name(""), None);
+        assert_eq!(program_name(r#""unterminated"#), None);
+        assert_eq!(program_name(r#""a"b"#), None);
+    }
+
+    #[cfg(not(windows))]
+    #[test]
+    fn test_program_name_unix() {
+        assert_eq!(program_name("LESS=FR less").as_deref(), Some("less"));
+        assert_eq!(program_name("A=1 B=2 less -S").as_deref(), Some("less"));
+        assert_eq!(program_name("'less' -S").as_deref(), Some("less"));
+        assert_eq!(program_name("less;true").as_deref(), Some("less"));
+        // Programs that need the shell to expand are not checked.
+        assert_eq!(program_name("$PAGER"), None);
+        assert_eq!(program_name("~/bin/pager"), None);
+        // Shell builtins have no file to look up.
+        assert_eq!(program_name("exec less"), None);
+        assert_eq!(program_name("command less"), None);
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn test_program_name_windows() {
+        assert_eq!(
+            program_name(r#""C:\Program Files\less.exe" -S"#).as_deref(),
+            Some(r"C:\Program Files\less.exe")
+        );
+        assert_eq!(
+            program_name(r"C:\tools\less.exe -S").as_deref(),
+            Some(r"C:\tools\less.exe")
+        );
+        assert_eq!(program_name("%PAGER%"), None);
+        assert_eq!(program_name("TYPE"), None);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn test_program_exists() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = tempfile::tempdir().unwrap();
+        let exe = dir.path().join("my-pager");
+        std::fs::write(&exe, "").unwrap();
+        std::fs::set_permissions(&exe, std::fs::Permissions::from_mode(0o755)).unwrap();
+        let plain = dir.path().join("not-executable");
+        std::fs::write(&plain, "").unwrap();
+        std::fs::set_permissions(&plain, std::fs::Permissions::from_mode(0o644)).unwrap();
+
+        let path = std::env::join_paths([dir.path()]).unwrap();
+        assert!(program_exists("my-pager", Some(&path), None));
+        assert!(program_exists(exe.to_str().unwrap(), None, None));
+        assert!(!program_exists("not-executable", Some(&path), None));
+        assert!(!program_exists("no-such-pager", Some(&path), None));
+        assert!(!program_exists("my-pager", None, None));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn test_program_exists() {
+        use std::ffi::OsStr;
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("my-pager.exe"), "").unwrap();
+        std::fs::write(dir.path().join("other.txt"), "").unwrap();
+
+        let path = std::env::join_paths([dir.path()]).unwrap();
+        let pathext = OsStr::new(".COM;.EXE");
+        assert!(program_exists("my-pager", Some(&path), Some(pathext)));
+        assert!(program_exists("my-pager.exe", Some(&path), Some(pathext)));
+        // Without PATHEXT, the default extensions are tried.
+        assert!(program_exists("my-pager", Some(&path), None));
+        assert!(!program_exists("other", Some(&path), Some(pathext)));
+        assert!(!program_exists("no-such-pager", Some(&path), Some(pathext)));
+        let full = dir.path().join("my-pager");
+        assert!(program_exists(full.to_str().unwrap(), None, Some(pathext)));
     }
 }
