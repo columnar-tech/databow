@@ -360,7 +360,9 @@ mod tests {
     #[cfg(windows)]
     #[test]
     fn test_run_pager_missing_command() {
-        let err = run_pager("hello", "databow-no-such-pager 2>nul").unwrap_err();
+        // No `2>nul` here: with a redirection, cmd reports a missing command
+        // with exit code 1 instead of 9009.
+        let err = run_pager("hello", "databow-no-such-pager").unwrap_err();
         assert_eq!(err.kind(), io::ErrorKind::NotFound);
     }
 }
