@@ -31,7 +31,7 @@ jobs:
         run: cargo build
 
       - name: lint
-        run: cargo clippy
+        run: cargo clippy --all-targets -- -D warnings
 
       - name: test
         run: cargo test
