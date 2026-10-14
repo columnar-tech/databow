@@ -72,12 +72,12 @@ const COMMANDS: &[CommandInfo] = &[
     },
     CommandInfo {
         names: &["maxrows"],
-        usage: "?COUNT|default?",
+        usage: "?COUNT?",
         description: "Show or set the maximum number of rows to display (0 for no limit)",
     },
     CommandInfo {
         names: &["maxwidth"],
-        usage: "?WIDTH|default?",
+        usage: "?WIDTH?",
         description: "Show or set the maximum table width (0 for no limit)",
     },
     CommandInfo {
@@ -87,7 +87,7 @@ const COMMANDS: &[CommandInfo] = &[
     },
     CommandInfo {
         names: &["pager"],
-        usage: "?on|off|automatic|set_row_threshold COUNT|COMMAND?",
+        usage: "?OPTIONS?",
         description: "Show or configure paging of large results",
     },
     CommandInfo {
@@ -117,7 +117,13 @@ pub fn parse(input: &str) -> Result<Command, String> {
         .find(|info| info.names.contains(&name))
         .ok_or_else(|| format!("Unknown command: .{name} (use .help to list commands)"))?;
     let usage = || {
-        let usage = format!(".{} {}", info.names[0], info.usage);
+        // `.help` shows `.pager ?OPTIONS?` to stay compact, but errors spell
+        // out the accepted options.
+        let args = match name {
+            "pager" => "?on|off|automatic|set_row_threshold COUNT|COMMAND?",
+            _ => info.usage,
+        };
+        let usage = format!(".{} {args}", info.names[0]);
         format!("Usage: {}", usage.trim_end())
     };
 
@@ -405,15 +411,15 @@ mod tests {
         assert!(parse(".").unwrap_err().contains("Unknown command"));
         assert_eq!(
             parse(".maxrows lots"),
-            Err("Usage: .maxrows ?COUNT|default?".to_string())
+            Err("Usage: .maxrows ?COUNT?".to_string())
         );
         assert_eq!(
             parse(".maxrows -1"),
-            Err("Usage: .maxrows ?COUNT|default?".to_string())
+            Err("Usage: .maxrows ?COUNT?".to_string())
         );
         assert_eq!(
             parse(".maxrows 1 2"),
-            Err("Usage: .maxrows ?COUNT|default?".to_string())
+            Err("Usage: .maxrows ?COUNT?".to_string())
         );
         assert_eq!(parse(".last now"), Err("Usage: .last".to_string()));
         assert!(parse(".mode fancy").unwrap_err().contains("Unknown mode"));
