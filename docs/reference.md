@@ -154,9 +154,11 @@ Show the last result in full, without truncation
 ```
 > SELECT * FROM range(1000);
 ...
-  1000 rows (40 shown)       use .last to show entire result       1 column
+  1000 rows (40 shown)  1 column
 > .last
 ```
+
+When the table is wide enough, the footer of a truncated result also includes the hint `use .last to show entire result`.
 
 ### .maxrows
 
