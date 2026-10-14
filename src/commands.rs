@@ -147,7 +147,11 @@ pub fn parse(input: &str) -> Result<Command, String> {
         ("pager", [keyword, value]) if is_row_threshold(keyword) => {
             Command::Pager(PagerArg::RowThreshold(value.parse().map_err(|_| usage())?))
         }
-        ("pager", [keyword, ..]) if is_row_threshold(keyword) => return Err(usage()),
+        ("pager", [keyword, ..])
+            if is_row_threshold(keyword) || parse_pager_mode(keyword).is_some() =>
+        {
+            return Err(usage());
+        }
         // Anything else is a pager command, which may contain spaces and
         // quotes, so take it verbatim from the input.
         ("pager", [_, ..]) => {
@@ -165,12 +169,14 @@ pub fn parse(input: &str) -> Result<Command, String> {
 }
 
 /// Strip one pair of matching surrounding quotes, so that DuckDB-style
-/// `.pager 'less -S'` works.
+/// `.pager 'less -S'` works. Values like `'a' 'b'`, where the outer quotes
+/// belong to separate quoted words, are left alone.
 fn unquote(value: &str) -> &str {
     for quote in ['\'', '"'] {
         if let Some(inner) = value
             .strip_prefix(quote)
             .and_then(|rest| rest.strip_suffix(quote))
+            .filter(|inner| !inner.contains(quote))
         {
             return inner;
         }
@@ -487,6 +493,18 @@ mod tests {
             parse(".pager 'pspg --csv'"),
             Ok(Command::Pager(PagerArg::Command("pspg --csv".to_string())))
         );
+        assert_eq!(
+            parse(".pager 'a' 'b'"),
+            Ok(Command::Pager(PagerArg::Command("'a' 'b'".to_string())))
+        );
+        assert_eq!(
+            parse(r#".pager "C:\Program Files\less.exe" -S"#),
+            Ok(Command::Pager(PagerArg::Command(
+                r#""C:\Program Files\less.exe" -S"#.to_string()
+            )))
+        );
+        assert!(parse(".pager on extra").is_err());
+        assert!(parse(".pager off now").is_err());
     }
 
     #[test]
