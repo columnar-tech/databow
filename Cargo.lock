@@ -608,12 +608,15 @@ dependencies = [
  "arrow-schema",
  "clap",
  "comfy-table",
+ "libc",
  "nu-ansi-term",
  "parquet",
  "reedline",
  "syntect",
  "tempfile",
  "terminal-colorsaurus",
+ "unicode-width",
+ "windows-sys",
 ]
 
 [[package]]

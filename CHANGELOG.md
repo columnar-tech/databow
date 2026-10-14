@@ -5,6 +5,7 @@
 - Infer driver from URI scheme (#29)
 - Show info on repl startup (#27)
 - Add JSON lines, Arrow IPC stream, and Parquet output formats (#26)
+- Add dot commands, result truncation and pager to repl (#36)
 
 ### 📚 Documentation
 
@@ -15,6 +16,7 @@
 - Add cassandra example
 - Add druid example
 - Add firebolt example
+- Fix broken links from tutorial to reference page (#42)
 
 ### ⚙️ Miscellaneous Tasks
 

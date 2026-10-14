@@ -2,11 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 mod cli;
+mod commands;
 mod database;
 mod highlighter;
 mod output;
+mod pager;
 mod repl;
 mod table;
+mod truncate;
 
 use cli::{AppConfig, QuerySource, parse_args};
 use std::io::Read;
@@ -27,7 +30,12 @@ fn main() {
             eprintln!("{e}");
             exit(1);
         });
-        repl::run_repl(connection, table_mode, &statement_options);
+        repl::run_repl(
+            connection,
+            table_mode,
+            table::TruncationOptions::default(),
+            &statement_options,
+        );
         return;
     }
 
@@ -81,7 +89,13 @@ fn output_results(
         output::write_batches_to_file(&result.schema, &result.batches, path)
             .map_err(|e| format!("Failed to write output file: {e}"))
     } else {
-        table::print_batches(&result.batches, table_mode)
-            .map_err(|e| format!("Failed to print batches: {e}"))
+        table::print_batches(
+            &result.batches,
+            table::RenderOptions {
+                mode: table_mode,
+                ..Default::default()
+            },
+        )
+        .map_err(|e| format!("Failed to print batches: {e}"))
     }
 }
