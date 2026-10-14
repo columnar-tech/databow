@@ -170,10 +170,11 @@ pub fn parse(input: &str) -> Result<Command, String> {
 
 /// Strip one pair of matching surrounding quotes, so that DuckDB-style
 /// `.pager 'less -S'` works. Values like `'a' 'b'`, where the outer quotes
-/// belong to separate quoted words, are left alone. A quoted path to a
-/// program, like `"C:\Program Files\less.exe"`, keeps its quotes so that it
-/// reaches the shell as one word; `cmd` only understands double quotes, so on
-/// Windows single quotes are replaced.
+/// belong to separate quoted words, are left alone. A quoted program path,
+/// like `"C:\Program Files\less.exe"`, keeps its quotes so that it reaches
+/// the shell as one word, even if it does not exist so that the error names
+/// the whole path; `cmd` only understands double quotes, so on Windows single
+/// quotes are replaced.
 fn unquote(value: &str) -> String {
     for quote in ['\'', '"'] {
         if let Some(inner) = value
@@ -181,7 +182,7 @@ fn unquote(value: &str) -> String {
             .and_then(|rest| rest.strip_suffix(quote))
             .filter(|inner| !inner.contains(quote))
         {
-            if !pager::is_program_path(inner) {
+            if !pager::is_quoted_program_path(inner) {
                 return inner.to_string();
             }
             if cfg!(windows) {
@@ -533,6 +534,43 @@ mod tests {
         assert_eq!(
             parse(&format!(".pager {single}")),
             Ok(Command::Pager(PagerArg::Command(expected)))
+        );
+        // A quoted path that is missing or not executable keeps its quotes
+        // too, so that the error names the whole path.
+        let plain = dir.path().join("my pager.txt");
+        std::fs::write(&plain, "").unwrap();
+        let quoted = format!("\"{}\"", plain.display());
+        assert_eq!(
+            parse(&format!(".pager {quoted}")),
+            Ok(Command::Pager(PagerArg::Command(quoted)))
+        );
+        let quoted = format!("\"{}\"", dir.path().join("no such pager").display());
+        assert_eq!(
+            parse(&format!(".pager {quoted}")),
+            Ok(Command::Pager(PagerArg::Command(quoted)))
+        );
+        // A quoted command whose program is a bare name loses its quotes,
+        // even if the program is missing.
+        assert_eq!(
+            parse(".pager 'databow-no-such-pager > /tmp/out'"),
+            Ok(Command::Pager(PagerArg::Command(
+                "databow-no-such-pager > /tmp/out".to_string()
+            )))
+        );
+        // So does one whose program is a path to an existing program.
+        let program = dir
+            .path()
+            .join(if cfg!(windows) { "pager.exe" } else { "pager" });
+        std::fs::write(&program, "").unwrap();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(&program, std::fs::Permissions::from_mode(0o755)).unwrap();
+        }
+        let command = format!("{} -S", program.display());
+        assert_eq!(
+            parse(&format!(".pager '{command}'")),
+            Ok(Command::Pager(PagerArg::Command(command)))
         );
         assert_eq!(
             parse(r#".pager "C:\Program Files\less.exe" -S"#),

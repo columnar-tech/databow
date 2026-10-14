@@ -99,19 +99,12 @@ pub fn page(text: &str, command: &str) {
 }
 
 fn run_pager(text: &str, command: &str) -> io::Result<()> {
-    // The shell's exit code for a missing command is not reliable (`cmd`
-    // reports 1, the same as many failures), so look the program up first.
-    if let Some(program) = program_name(command)
-        && !program_exists(
-            &program,
-            std::env::var_os("PATH").as_deref(),
-            std::env::var_os("PATHEXT").as_deref(),
-        )
-    {
-        return Err(io::Error::new(
-            io::ErrorKind::NotFound,
-            format!("{program} not found"),
-        ));
+    // The shell's exit code for a missing command is not reliable everywhere
+    // (`cmd` reports 1, the same as many failures), so look the program up
+    // first. Commands that need the shell to find their program are checked
+    // by exit code below instead, on Unix.
+    if let Some(program) = program_name(command) {
+        check_program(&program)?;
     }
 
     let mut cmd = shell_command(command);
@@ -133,9 +126,12 @@ fn run_pager(text: &str, command: &str) -> io::Result<()> {
         .and_then(|()| stdin.write_all(b"\n"));
     // Close the pipe so the pager sees end of input.
     drop(stdin);
-    // The pager's exit status is ignored: pagers may exit non-zero when quit
+    // Other exit statuses are ignored: pagers may exit non-zero when quit
     // early, and the output has been shown either way.
-    child.wait()?;
+    let status = child.wait()?;
+    if let Some(err) = shell_status_error(status.code()) {
+        return Err(err);
+    }
 
     match result {
         // The user quit the pager before reading all output.
@@ -143,6 +139,45 @@ fn run_pager(text: &str, command: &str) -> io::Result<()> {
         other => other?,
     }
     Ok(())
+}
+
+/// Check that `program`, as found by [`program_name`], can be run.
+fn check_program(program: &str) -> io::Result<()> {
+    if program_exists(
+        program,
+        std::env::var_os("PATH").as_deref(),
+        std::env::var_os("PATHEXT").as_deref(),
+    ) {
+        return Ok(());
+    }
+    if cfg!(unix) && has_separator(program) && std::path::Path::new(program).exists() {
+        return Err(io::Error::new(
+            io::ErrorKind::PermissionDenied,
+            format!("{program} is not executable"),
+        ));
+    }
+    Err(io::Error::new(
+        io::ErrorKind::NotFound,
+        format!("{program} not found"),
+    ))
+}
+
+/// The error for a shell exit code reporting that the program could not be
+/// run. POSIX shells exit with 127 when the command is not found and 126 when
+/// it is not executable. This catches programs that [`program_name`] cannot
+/// determine, like `~/bin/pager` or `$PAGER`.
+fn shell_status_error(code: Option<i32>) -> Option<io::Error> {
+    if cfg!(windows) {
+        return None;
+    }
+    match code {
+        Some(127) => Some(io::Error::new(io::ErrorKind::NotFound, "command not found")),
+        Some(126) => Some(io::Error::new(
+            io::ErrorKind::PermissionDenied,
+            "command not executable",
+        )),
+        _ => None,
+    }
 }
 
 /// The program a shell command runs: its first word, which may be quoted to
@@ -235,9 +270,22 @@ fn is_shell_builtin(word: &str) -> bool {
     }
 }
 
-/// Whether `value` is a path (not a bare name) to an existing program.
-pub fn is_program_path(value: &str) -> bool {
-    has_separator(value) && program_exists(value, None, std::env::var_os("PATHEXT").as_deref())
+/// Whether a quoted `.pager` value is a single program path, like
+/// `"/opt/my pager/less"`, rather than a whole command, like
+/// `'/usr/bin/less -S'`. A path keeps its quotes so that it reaches the shell
+/// as one word. A value is a path when it names an existing file, or when its
+/// first word is a path that does not exist, so that a mistyped or
+/// non-executable path is reported by its full name. A command like
+/// `'lesss > /tmp/out'`, whose first word is a bare name, is not a path.
+pub fn is_quoted_program_path(value: &str) -> bool {
+    if !has_separator(value) {
+        return false;
+    }
+    if std::path::Path::new(value).is_file() {
+        return true;
+    }
+    program_name(value)
+        .is_some_and(|program| has_separator(&program) && !program_exists(&program, None, None))
 }
 
 /// Whether `program` names an executable, either as a path or by searching
@@ -497,6 +545,43 @@ mod tests {
     fn test_run_pager_missing_command() {
         let err = run_pager("hello", "databow-no-such-pager 2>/dev/null").unwrap_err();
         assert_eq!(err.kind(), io::ErrorKind::NotFound);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn test_run_pager_missing_command_from_shell() {
+        // Programs the shell has to find are caught by its exit code.
+        let err = run_pager("hello", "~/databow-no-such-pager 2>/dev/null").unwrap_err();
+        assert_eq!(err.kind(), io::ErrorKind::NotFound);
+        let err = run_pager("hello", "\"$HOME/databow-no-such-pager\" 2>/dev/null").unwrap_err();
+        assert_eq!(err.kind(), io::ErrorKind::NotFound);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn test_run_pager_not_executable() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = tempfile::tempdir().unwrap();
+        let plain = dir.path().join("my pager.txt");
+        std::fs::write(&plain, "").unwrap();
+        std::fs::set_permissions(&plain, std::fs::Permissions::from_mode(0o644)).unwrap();
+        let err = run_pager("hello", &format!("'{}'", plain.display())).unwrap_err();
+        assert_eq!(err.kind(), io::ErrorKind::PermissionDenied);
+        assert!(err.to_string().contains("my pager.txt is not executable"));
+    }
+
+    #[test]
+    fn test_shell_status_error() {
+        let kind = |code| shell_status_error(code).map(|err| err.kind());
+        if cfg!(not(windows)) {
+            assert_eq!(kind(Some(127)), Some(io::ErrorKind::NotFound));
+            assert_eq!(kind(Some(126)), Some(io::ErrorKind::PermissionDenied));
+        } else {
+            assert_eq!(kind(Some(127)), None);
+        }
+        assert_eq!(kind(Some(0)), None);
+        assert_eq!(kind(Some(1)), None);
+        assert_eq!(kind(None), None);
     }
 
     #[cfg(windows)]
