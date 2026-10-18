@@ -1,6 +1,7 @@
 // Copyright 2026 Columnar Technologies Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::output::OutputFormat;
 use crate::table::TableMode;
 use clap::{Arg, ArgAction, Command, value_parser};
 use std::path::PathBuf;
@@ -34,6 +35,7 @@ pub enum ConnectionSource {
 
 pub struct AppConfig {
     pub connection: ConnectionSource,
+    pub statement_options: Vec<(String, String)>,
     pub query_source: QuerySource,
     pub table_mode: TableMode,
     pub output_path: Option<PathBuf>,
@@ -64,7 +66,13 @@ pub fn parse_args() -> AppConfig {
             .help("Database user password"),
         Arg::new("option")
             .long("option")
+            .value_name("key=value")
             .help("Driver-specific database option")
+            .action(ArgAction::Append),
+        Arg::new("statement-option")
+            .long("statement-option")
+            .value_name("key=value")
+            .help("Driver-specific statement option")
             .action(ArgAction::Append),
         Arg::new("mode")
             .long("mode")
@@ -84,7 +92,8 @@ pub fn parse_args() -> AppConfig {
         Arg::new("output")
             .long("output")
             .help("Write result to file")
-            .value_name("file"),
+            .value_name("file")
+            .value_parser(parse_output_path),
     ];
     let command = Command::new("databow")
         .version(env!("CARGO_PKG_VERSION"))
@@ -99,18 +108,8 @@ pub fn parse_args() -> AppConfig {
     let username = matches.get_one::<String>("username").cloned();
     let password = matches.get_one::<String>("password").cloned();
 
-    let mut options = Vec::new();
-    if let Some(option_values) = matches.get_many::<String>("option") {
-        for option in option_values {
-            match parse_option(option) {
-                Ok((key, value)) => options.push((key, value)),
-                Err(err) => {
-                    eprintln!("{err}");
-                    exit(1);
-                }
-            }
-        }
-    }
+    let options = collect_options(&matches, "option");
+    let statement_options = collect_options(&matches, "statement-option");
 
     // Build ConnectionSource based on whether --profile or --driver was provided
     let connection = if let Some(profile) = profile {
@@ -163,7 +162,7 @@ pub fn parse_args() -> AppConfig {
         .copied()
         .unwrap_or_default();
 
-    let output_path = matches.get_one::<String>("output").map(PathBuf::from);
+    let output_path = matches.get_one::<PathBuf>("output").cloned();
     if output_path.is_some() && matches!(query_source, QuerySource::Interactive) {
         eprintln!("Error: --output cannot be used in interactive mode");
         exit(1);
@@ -171,6 +170,7 @@ pub fn parse_args() -> AppConfig {
 
     AppConfig {
         connection,
+        statement_options,
         query_source,
         table_mode,
         output_path,
@@ -186,6 +186,28 @@ pub(crate) fn uri_driver_scheme(uri: &str) -> Option<&str> {
         return None;
     }
     Some(scheme)
+}
+
+/// Parse all `key=value` values supplied for the argument `id`, exiting with an
+/// error message if any value is malformed.
+fn collect_options(matches: &clap::ArgMatches, id: &str) -> Vec<(String, String)> {
+    let Some(values) = matches.get_many::<String>(id) else {
+        return Vec::new();
+    };
+    values
+        .map(|option| {
+            parse_option(option).unwrap_or_else(|err| {
+                eprintln!("{err}");
+                exit(1);
+            })
+        })
+        .collect()
+}
+
+fn parse_output_path(s: &str) -> Result<PathBuf, String> {
+    let path = PathBuf::from(s);
+    OutputFormat::from_path(&path)?;
+    Ok(path)
 }
 
 fn uri_has_driver_scheme(uri: &str) -> bool {
@@ -209,6 +231,26 @@ fn parse_option(option: &str) -> Result<(String, String), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_parse_output_path_valid() {
+        assert_eq!(
+            parse_output_path("out.parquet").unwrap(),
+            PathBuf::from("out.parquet")
+        );
+    }
+
+    #[test]
+    fn test_parse_output_path_unsupported_extension() {
+        let err = parse_output_path("out.xyz").unwrap_err();
+        assert!(err.contains("Unsupported file extension"));
+    }
+
+    #[test]
+    fn test_parse_output_path_no_extension() {
+        let err = parse_output_path("out").unwrap_err();
+        assert!(err.contains("no file extension"));
+    }
 
     #[test]
     fn test_connection_source_direct() {
@@ -348,6 +390,7 @@ mod tests {
                 password: Some("test_pass".to_string()),
                 options: vec![("key1".to_string(), "val1".to_string())],
             },
+            statement_options: vec![],
             query_source: QuerySource::Interactive,
             table_mode: TableMode::default(),
             output_path: None,
@@ -382,6 +425,7 @@ mod tests {
                 password: None,
                 options: vec![],
             },
+            statement_options: vec![],
             query_source: QuerySource::Interactive,
             table_mode: TableMode::AsciiMarkdown,
             output_path: None,
@@ -406,6 +450,7 @@ mod tests {
                 password: None,
                 options: vec![("extra".to_string(), "option".to_string())],
             },
+            statement_options: vec![],
             query_source: QuerySource::Query("SELECT 1".to_string()),
             table_mode: TableMode::default(),
             output_path: Some(PathBuf::from("output.json")),

@@ -229,7 +229,7 @@ impl History for HistoryAdapter {
         id: HistoryItemId,
         updater: &dyn Fn(HistoryItem) -> HistoryItem,
     ) -> Result<()> {
-        // reedline 0.51 preserves typed more_info on this type-erased path.
+        // Reedline preserves typed more_info on this type-erased path.
         self.backend.update(id, updater)
     }
 
@@ -250,9 +250,33 @@ impl History for HistoryAdapter {
     }
 }
 
-/// Resolve the default OS-appropriate application data directory.
+/// Resolve the default OS-appropriate history database path.
+///
+/// Linux uses `XDG_STATE_HOME`, defaulting to `~/.local/state`. Other platforms
+/// use the local data directory, which is LocalAppData on Windows and
+/// Application Support on macOS. The database lives under `databow/` within
+/// that directory.
 pub fn default_history_path() -> Option<PathBuf> {
-    dirs::data_dir().map(|path| path.join("databow").join("history.sqlite3"))
+    history_base_dir().map(|path| path.join("databow").join("history.sqlite3"))
+}
+
+fn history_base_dir() -> Option<PathBuf> {
+    history_base_dir_from(dirs::state_dir(), dirs::data_local_dir())
+}
+
+fn history_base_dir_from(
+    _state_dir: Option<PathBuf>,
+    _data_local_dir: Option<PathBuf>,
+) -> Option<PathBuf> {
+    #[cfg(target_os = "linux")]
+    {
+        _state_dir
+    }
+
+    #[cfg(not(target_os = "linux"))]
+    {
+        _data_local_dir
+    }
 }
 
 /// Open persistent history, falling back to an in-memory SQLite backend.
@@ -458,7 +482,7 @@ mod tests {
                 .unwrap();
         // This is the initial backward query issued by reedline's
         // HistoryCursor::back for HistoryNavigationQuery::Normal. HistoryCursor
-        // is not re-exported by reedline 0.51, so keep the regression test on
+        // is not re-exported, so keep the regression test on
         // the exact public History query it constructs.
         let results = history_b
             .search(SearchQuery {
@@ -517,6 +541,33 @@ mod tests {
             path.parent().and_then(std::path::Path::file_name),
             Some(std::ffi::OsStr::new("databow"))
         );
+    }
+
+    #[test]
+    fn history_base_dir_uses_the_platform_history_location() {
+        let state_dir = PathBuf::from("state");
+        let data_local_dir = PathBuf::from("local-data");
+
+        #[cfg(target_os = "linux")]
+        {
+            assert_eq!(
+                history_base_dir_from(Some(state_dir.clone()), Some(data_local_dir.clone())),
+                Some(state_dir)
+            );
+            assert_eq!(history_base_dir_from(None, Some(data_local_dir)), None);
+        }
+
+        #[cfg(not(target_os = "linux"))]
+        {
+            assert_eq!(
+                history_base_dir_from(Some(state_dir), Some(data_local_dir.clone())),
+                Some(data_local_dir)
+            );
+            assert_eq!(
+                history_base_dir_from(Some(PathBuf::from("state")), None),
+                None
+            );
+        }
     }
 
     #[test]

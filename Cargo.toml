@@ -1,7 +1,7 @@
 [package]
 name = "databow"
 description = "A command-line tool for querying databases via ADBC"
-version = "0.1.2"
+version = "0.2.0"
 edition = "2024"
 license = "Apache-2.0"
 readme = "README.md"
@@ -11,23 +11,31 @@ categories = ["command-line-utilities", "database"]
 include = ["/src", "/themes", "build.rs", "LICENSE", "README.md"]
 
 [dependencies]
-adbc_core = "0.23.0"
-adbc_driver_manager = "0.23.0"
-arrow = { version = "58.1.0", features = ["chrono-tz"] }
-arrow-array = "58.1.0"
-arrow-cast = "58.1.0"
-arrow-schema = "58.1.0"
-clap = { version = "4.6.1", features = ["derive"] }
-comfy-table = "7.2.2"
+adbc_core = "0.24.0"
+adbc_driver_manager = "0.24.0"
+arrow = { version = "59.3.0", features = ["chrono-tz"] }
+arrow-array = "59.3.0"
+arrow-cast = "59.3.0"
+arrow-schema = "59.3.0"
+clap = { version = "4.6.7", features = ["derive"] }
+comfy-table = "8.0.1"
 nu-ansi-term = "0.50.3"
 chrono = "0.4.41"
 dirs = "6.0.0"
-reedline = { version = "0.51.0", features = ["sqlite"] }
+reedline = { version = "0.52.0", features = ["sqlite"] }
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
+parquet = { version = "59.3.0", default-features = false, features = ["arrow", "snap"] }
 syntect = "5.3.0"
+tempfile = "3.27.0"
 terminal-colorsaurus = "1.0.3"
+unicode-width = "0.2.2"
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2.189"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61.2", features = ["Win32_System_Console"] }
 
 [dev-dependencies]
-arrow-buffer = "58.1.0"
-tempfile = "3.27.0"
+arrow-buffer = "59.3.0"

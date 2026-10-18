@@ -96,6 +96,51 @@ fn test_no_driver_no_scheme_uri_errors() {
 }
 
 #[test]
+fn test_statement_option_rejected_by_driver() {
+    let output = Command::new("cargo")
+        .args([
+            "run",
+            "--",
+            "--driver",
+            "duckdb",
+            "--statement-option",
+            "bogus=1",
+            "--query",
+            "SELECT 1",
+        ])
+        .output()
+        .expect("Failed to execute command");
+
+    assert!(!output.status.success());
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains("Failed to set statement option 'bogus'"),
+        "stderr: {stderr}"
+    );
+}
+
+#[test]
+fn test_statement_option_invalid_format() {
+    let output = Command::new("cargo")
+        .args([
+            "run",
+            "--",
+            "--driver",
+            "duckdb",
+            "--statement-option",
+            "novalue",
+            "--query",
+            "SELECT 1",
+        ])
+        .output()
+        .expect("Failed to execute command");
+
+    assert!(!output.status.success());
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("Invalid option format"), "stderr: {stderr}");
+}
+
+#[test]
 fn test_file_argument() {
     // Create a temporary SQL file
     let mut temp_file = NamedTempFile::new().expect("Failed to create temp file");
@@ -478,4 +523,53 @@ fn test_timestamp_with_time_zone() {
         "expected session-zone-rendered TIMESTAMPTZ in output. stdout: {}",
         stdout
     );
+}
+
+#[test]
+fn test_invalid_output_extension_fails_before_connect() {
+    let output = Command::new("cargo")
+        .args([
+            "run",
+            "--",
+            "--driver",
+            "nonexistent_driver",
+            "--query",
+            "SELECT 1",
+            "--output",
+            "out.xyz",
+        ])
+        .output()
+        .expect("Failed to execute command");
+
+    // Exit code 2 and "invalid value" come from clap argument parsing,
+    // which happens before any connection attempt.
+    assert_eq!(output.status.code(), Some(2));
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("invalid value 'out.xyz' for '--output <file>'"));
+    assert!(stderr.contains("Unsupported file extension"));
+}
+
+#[test]
+fn test_blank_query_with_output_fails_before_connect() {
+    let dir = tempfile::tempdir().unwrap();
+    let out = dir.path().join("out.csv");
+    let output = Command::new("cargo")
+        .args([
+            "run",
+            "--",
+            "--driver",
+            "nonexistent_driver",
+            "--query",
+            "  ",
+            "--output",
+        ])
+        .arg(&out)
+        .output()
+        .expect("Failed to execute command");
+
+    assert!(!output.status.success());
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    // Rejected before trying to load the (nonexistent) driver.
+    assert!(stderr.contains("No query to execute"), "stderr: {stderr}");
+    assert!(!out.exists());
 }

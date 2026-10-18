@@ -2,9 +2,21 @@
 
 ### 🚀 Features
 
-- Add SQLite-backed interactive history with safe connection metadata (#32)
+- Add SQLite-backed interactive history with safe connection metadata (#32); store it in the platform state/data directory
+
+### 📚 Documentation
+
+- Remove use_copy option from CedarDB example
+- Add Materialize example
+## [0.2.0] - 2026-10-14
+
+### 🚀 Features
+
 - Infer driver from URI scheme (#29)
 - Show info on repl startup (#27)
+- Add JSON lines, Arrow IPC stream, and Parquet output formats (#26)
+- Add dot commands, result truncation and pager to repl (#36)
+- Add support for statement options (#40)
 
 ### 📚 Documentation
 
@@ -13,10 +25,15 @@
 - Add chdb example (#30)
 - Add presto example (#31)
 - Add cassandra example
+- Add druid example
+- Add firebolt example
+- Fix broken links from tutorial to reference page (#42)
+- Add database examples (#38)
 
 ### ⚙️ Miscellaneous Tasks
 
 - Limit pypi workflow to release and manual dispatch triggers
+- Bump version to 0.2.0
 ## [0.1.2] - 2026-07-08
 
 ### 🐛 Bug Fixes

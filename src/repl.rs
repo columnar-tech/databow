@@ -1,11 +1,14 @@
 // Copyright 2026 Columnar Technologies Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::commands::{self, Outcome, ReplState};
 use crate::database;
 use crate::highlighter::SyntectHighlighter;
 use crate::history::{self, ConnectionIdentity};
-use crate::table::{TableMode, print_batches};
+use crate::pager::PagerSettings;
+use crate::table::{RenderOptions, TableMode, TruncationOptions};
 use adbc_core::Connection;
+use adbc_core::options::{OptionStatement, OptionValue};
 use reedline::{
     Prompt, PromptEditMode, PromptHistorySearch, Reedline, Signal, ValidationResult, Validator,
 };
@@ -16,7 +19,8 @@ struct SqlValidator;
 impl Validator for SqlValidator {
     fn validate(&self, line: &str) -> ValidationResult {
         let trimmed = line.trim();
-        if trimmed.is_empty() || trimmed.ends_with(';') {
+        // Dot commands are a single line and need no terminating semicolon.
+        if trimmed.is_empty() || trimmed.ends_with(';') || commands::is_command(trimmed) {
             ValidationResult::Complete
         } else {
             ValidationResult::Incomplete
@@ -72,6 +76,8 @@ pub fn run_repl(
     mut connection: impl Connection,
     table_mode: TableMode,
     connection_identity: ConnectionIdentity,
+    truncation: TruncationOptions,
+    statement_options: &[(OptionStatement, OptionValue)],
 ) {
     let vendor = database::get_vendor_info(&connection);
     println!("{}", format_banner(env!("CARGO_PKG_VERSION"), &vendor));
@@ -87,6 +93,12 @@ pub fn run_repl(
         ));
     let prompt = SqlPrompt;
     let mut ctrl_c_count: u8 = 0;
+    let mut state = ReplState {
+        table_mode,
+        truncation,
+        pager: PagerSettings::default(),
+        last_result: None,
+    };
 
     loop {
         let signal = line_editor.read_line(&prompt);
@@ -98,17 +110,37 @@ pub fn run_repl(
                     continue;
                 }
 
+                if commands::is_command(&buffer) {
+                    match commands::run(&buffer, &mut state) {
+                        Ok(Outcome::Continue) => {}
+                        Ok(Outcome::Exit) => break,
+                        Err(err) => eprintln!("{err}"),
+                    }
+                    continue;
+                }
+
                 let sql = buffer.trim_end().trim_end_matches(';');
-                let batches = match database::execute_query(&mut connection, sql) {
-                    Ok(batches) => batches,
+                // Free the previous result before running the next query so
+                // two full results are never held at once.
+                state.last_result = None;
+                let batches = match database::execute_query(&mut connection, sql, statement_options)
+                {
+                    Ok(result) => result.batches,
                     Err(err) => {
                         eprintln!("{err}");
                         continue;
                     }
                 };
-                if let Err(err) = print_batches(&batches, table_mode) {
-                    eprintln!("Failed to print batches: {err}");
+                // Resolve per query so terminal resizes are picked up.
+                let options = RenderOptions {
+                    mode: state.table_mode,
+                    limits: state.truncation.resolve(),
+                    hint: Some(commands::LAST_HINT),
+                };
+                if let Err(err) = commands::display_result(&batches, options, &state.pager) {
+                    eprintln!("{err}");
                 }
+                state.last_result = Some(batches);
             }
             Ok(Signal::CtrlC) => {
                 if ctrl_c_count == 0 {

@@ -36,7 +36,7 @@ CLI arguments can be used to directly specify the driver, database URI, and cred
 databow --driver duckdb --uri warehouse.db
 ```
 
-In addition to the `--driver` and `--uri` arguments shown above, `--username`, `--password` and `--option` arguments are also available. See [Reference](/reference) for more information.
+In addition to the `--driver` and `--uri` arguments shown above, `--username`, `--password` and `--option` arguments are also available. See [Reference](reference.md) for more information.
 
 ### Connection Profiles
 
@@ -94,7 +94,7 @@ $ databow --profile warehouse
 └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴─────────────┴────────┴──────┘
 ```
 
-Query results are displayed in clean, aligned tables with dynamic column width. The [`--mode` argument](/reference/#-mode) can be used to specify the table display style:
+Query results are displayed in clean, aligned tables with dynamic column width. The [`--mode` argument](reference.md#-mode) can be used to specify the table display style:
 
 ```console
 $ databow --profile warehouse --mode ascii-markdown
@@ -110,7 +110,7 @@ $ databow --profile warehouse --mode ascii-markdown
 
 ## Non-interactive Usage
 
-The [`--query` argument](/reference/#-query) can be used to execute a query and exit:
+The [`--query` argument](reference.md#-query) can be used to execute a query and exit:
 
 ```console
 $ databow --profile warehouse --query "SELECT AVG(body_mass_g) FROM penguins"
@@ -132,7 +132,7 @@ $ echo "SELECT AVG(body_mass_g) FROM penguins" | databow --profile warehouse
 └───────────────────┘
 ```
 
-Or from a file using the [`--file` argument](/reference/#-file):
+Or from a file using the [`--file` argument](reference.md#-file):
 
 ```console
 $ databow --profile warehouse --file query.sql
@@ -143,7 +143,7 @@ $ databow --profile warehouse --file query.sql
 └───────────────────┘
 ```
 
-Instead of printing query results to stdout, the [`--output` argument](/reference/#-output) can be used to write results to JSON, CSV, or Arrow IPC files:
+Instead of printing query results to stdout, the [`--output` argument](reference.md#-output) can be used to write results to JSON, JSON lines, CSV, Arrow IPC file, Arrow IPC stream, or Parquet files:
 
 ```console
 $ databow --profile warehouse --query "SELECT * FROM penguins" --output penguins.csv
