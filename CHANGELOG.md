@@ -1,5 +1,9 @@
 ## [unreleased]
 
+### 🚀 Features
+
+- Add SQLite-backed interactive history with safe connection metadata (#32); store it in the platform state/data directory
+
 ### 📚 Documentation
 
 - Remove use_copy option from CedarDB example

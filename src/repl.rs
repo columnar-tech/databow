@@ -4,6 +4,7 @@
 use crate::commands::{self, Outcome, ReplState};
 use crate::database;
 use crate::highlighter::SyntectHighlighter;
+use crate::history::{self, ConnectionIdentity};
 use crate::pager::PagerSettings;
 use crate::table::{RenderOptions, TableMode, TruncationOptions};
 use adbc_core::Connection;
@@ -74,15 +75,22 @@ fn format_banner(version: &str, vendor: &database::VendorInfo) -> String {
 pub fn run_repl(
     mut connection: impl Connection,
     table_mode: TableMode,
+    connection_identity: ConnectionIdentity,
     truncation: TruncationOptions,
     statement_options: &[(OptionStatement, OptionValue)],
 ) {
     let vendor = database::get_vendor_info(&connection);
     println!("{}", format_banner(env!("CARGO_PKG_VERSION"), &vendor));
 
+    let history_session = Reedline::create_history_session_id();
     let mut line_editor = Reedline::create()
         .with_highlighter(Box::new(SyntectHighlighter::new()))
-        .with_validator(Box::new(SqlValidator));
+        .with_validator(Box::new(SqlValidator))
+        .with_history_session_id(history_session)
+        .with_history(history::initialize_history(
+            connection_identity,
+            history_session,
+        ));
     let prompt = SqlPrompt;
     let mut ctrl_c_count: u8 = 0;
     let mut state = ReplState {
