@@ -631,6 +631,20 @@ Connect to Vitess:
 databow --driver mysql --uri 'root@tcp(localhost:33577)/test'
 ```
 
+## XTDB
+
+Install the Arrow Flight SQL driver with dbc:
+
+```sh
+dbc install flightsql
+```
+
+Connect to XTDB:
+
+```sh
+databow --driver flightsql --uri grpc://localhost:3000
+```
+
 ## Yellowbrick
 
 Install the PostgreSQL driver with dbc:
