@@ -252,7 +252,7 @@ databow --driver duckdb --option path=data.db
 Install the Quack driver with dbc:
 
 ```sh
-dbc install --pre quack
+dbc install quack
 ```
 
 Connect to a DuckDB Quack server:
