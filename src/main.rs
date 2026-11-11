@@ -16,6 +16,8 @@ use std::io::Read;
 use std::process::exit;
 
 fn main() {
+    clap_complete::CompleteEnv::with_factory(cli::build_command).complete();
+
     let AppConfig {
         connection,
         statement_options,

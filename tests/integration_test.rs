@@ -573,3 +573,64 @@ fn test_blank_query_with_output_fails_before_connect() {
     assert!(stderr.contains("No query to execute"), "stderr: {stderr}");
     assert!(!out.exists());
 }
+
+#[test]
+fn test_profile_completion() {
+    let profiles = tempfile::tempdir().unwrap();
+    let home = tempfile::tempdir().unwrap();
+    std::fs::write(profiles.path().join("warehouse.toml"), "").unwrap();
+    std::fs::write(profiles.path().join("wiki.toml"), "").unwrap();
+    std::fs::write(profiles.path().join("analytics.toml"), "").unwrap();
+
+    // Run the built binary directly: overriding HOME would hide cargo's own
+    // home directory from a nested `cargo run` when CARGO_HOME is unset.
+    let output = Command::new(env!("CARGO_BIN_EXE_databow"))
+        .args(["--", "databow", "--profile", "w"])
+        .env("COMPLETE", "fish")
+        .env("ADBC_PROFILE_PATH", profiles.path())
+        .env("HOME", home.path())
+        .env("XDG_CONFIG_HOME", home.path())
+        .env("LOCALAPPDATA", home.path())
+        .output()
+        .expect("Failed to execute command");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let candidates: Vec<&str> = stdout.lines().collect();
+    assert_eq!(candidates, vec!["warehouse", "wiki"]);
+}
+
+#[test]
+fn test_generate_shell_completion() {
+    let output = Command::new("cargo")
+        .args(["run", "--", "generate-shell-completion", "fish"])
+        .output()
+        .expect("Failed to execute command");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("COMPLETE=fish"));
+    assert!(stdout.contains("--command databow"));
+}
+
+#[test]
+fn test_generate_shell_completion_unknown_shell() {
+    let output = Command::new("cargo")
+        .args(["run", "--", "generate-shell-completion", "tcsh"])
+        .output()
+        .expect("Failed to execute command");
+
+    assert!(!output.status.success());
+}
+
+#[test]
+fn test_generate_shell_completion_flag_alias() {
+    let output = Command::new("cargo")
+        .args(["run", "--", "--generate-shell-completion", "fish"])
+        .output()
+        .expect("Failed to execute command");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("COMPLETE=fish"));
+}
