@@ -5,6 +5,7 @@ mod cli;
 mod commands;
 mod database;
 mod highlighter;
+mod history;
 mod output;
 mod pager;
 mod repl;
@@ -26,6 +27,7 @@ fn main() {
     let statement_options = database::build_statement_options(statement_options);
 
     if matches!(query_source, QuerySource::Interactive) {
+        let connection_identity = history::ConnectionIdentity::from_source(&connection);
         let connection = database::initialize_connection(connection).unwrap_or_else(|e| {
             eprintln!("{e}");
             exit(1);
@@ -33,6 +35,7 @@ fn main() {
         repl::run_repl(
             connection,
             table_mode,
+            connection_identity,
             table::TruncationOptions::default(),
             &statement_options,
         );
