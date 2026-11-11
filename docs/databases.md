@@ -319,16 +319,16 @@ databow --driver flightsql --uri grpc+tcp://localhost:8181 --option 'adbc.flight
 
 ## MariaDB
 
-Install the MySQL driver with dbc:
+Install the MariaDB driver with dbc:
 
 ```sh
-dbc install mysql
+dbc install mariadb
 ```
 
 Connect to MariaDB:
 
 ```sh
-databow --driver mysql --uri 'root:my-secret-pw@tcp(localhost:3306)/sys'
+databow --uri mariadb://root:my-secret-pw@localhost:3306/sys
 ```
 
 ## Materialize
