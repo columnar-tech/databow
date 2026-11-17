@@ -8,6 +8,7 @@
 - Remove GizmoSQL example
 - Remove --pre from dbc install quack (#47)
 - Update mariadb example (#51)
+- Update motherduck example
 
 ### ⚙️ Miscellaneous Tasks
 
