@@ -361,16 +361,16 @@ databow --driver mssql --uri sqlserver://sa:pwd@localhost:1433?database=demo
 
 ## MotherDuck
 
-Install the DuckDB driver with dbc:
+Install the MotherDuck driver with dbc:
 
 ```sh
-dbc install duckdb
+dbc install --pre motherduck
 ```
 
 Connect to MotherDuck:
 
 ```sh
-databow --driver duckdb --option path=md:sample_data
+databow --uri motherduck://pg.us-east-1-aws.motherduck.com/sample_data
 ```
 
 ## MySQL
