@@ -4,7 +4,13 @@
 use crate::output::OutputFormat;
 use crate::table::TableMode;
 use clap::{Arg, ArgAction, Command, value_parser};
-use std::path::PathBuf;
+use clap_complete::engine::{
+    ArgValueCompleter, CompletionCandidate, PathCompleter, ValueCompleter,
+};
+use clap_complete::env::Shells;
+use std::collections::BTreeSet;
+use std::ffi::OsStr;
+use std::path::{MAIN_SEPARATOR, PathBuf};
 use std::process::exit;
 
 #[derive(Debug, Clone)]
@@ -46,11 +52,12 @@ fn is_stdin_piped() -> bool {
     !std::io::stdin().is_terminal()
 }
 
-pub fn parse_args() -> AppConfig {
+pub fn build_command() -> Command {
     let arguments = [
         Arg::new("profile")
             .long("profile")
             .help("Connection profile name or path")
+            .add(ArgValueCompleter::new(complete_profile))
             .conflicts_with("driver"),
         Arg::new("driver")
             .long("driver")
@@ -95,12 +102,35 @@ pub fn parse_args() -> AppConfig {
             .value_name("file")
             .value_parser(parse_output_path),
     ];
-    let command = Command::new("databow")
+    let generate_shell_completion = Command::new("generate-shell-completion")
+        .about("Generate shell completion")
+        .alias("--generate-shell-completion")
+        .hide(true)
+        .arg(
+            Arg::new("shell")
+                .help("The shell to generate the completion script for")
+                .required(true)
+                .value_parser(["bash", "zsh", "fish", "powershell"]),
+        );
+    Command::new("databow")
         .version(env!("CARGO_PKG_VERSION"))
         .about("Query databases via ADBC")
         .arg_required_else_help(true)
-        .args(arguments);
-    let matches = command.get_matches();
+        .args(arguments)
+        .subcommand(generate_shell_completion)
+        .disable_help_subcommand(true)
+}
+
+pub fn parse_args() -> AppConfig {
+    let matches = build_command().get_matches();
+
+    if let Some(("generate-shell-completion", sub_matches)) = matches.subcommand() {
+        let shell = sub_matches
+            .get_one::<String>("shell")
+            .expect("shell is required");
+        print_completion_registration(shell);
+        exit(0);
+    }
 
     let profile = matches.get_one::<String>("profile").cloned();
     let driver_name = matches.get_one::<String>("driver").cloned();
@@ -193,6 +223,98 @@ fn collect_options(matches: &clap::ArgMatches, id: &str) -> Vec<(String, String)
         .collect()
 }
 
+/// Print the script that registers dynamic completions for `shell`.
+///
+/// The script calls back into databow with `COMPLETE=<shell>` set, which is
+/// handled by `clap_complete::CompleteEnv` in `main`.
+fn print_completion_registration(shell: &str) {
+    let shells = Shells::builtins();
+    let completer = shells
+        .completer(shell)
+        .expect("shell is validated by the value parser");
+    // Like `CompleteEnv`, call back into the binary the way it was invoked: a
+    // bare name is resolved via PATH at completion time, a relative path is
+    // made absolute.
+    let mut bin = std::env::args_os()
+        .next()
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from("databow"));
+    if bin.components().count() > 1
+        && let Ok(current_dir) = std::env::current_dir()
+    {
+        bin = current_dir.join(bin);
+    }
+    let mut stdout = std::io::stdout();
+    completer
+        .write_registration(
+            "COMPLETE",
+            "databow",
+            "databow",
+            &bin.to_string_lossy(),
+            &mut stdout,
+        )
+        .unwrap_or_else(|e| {
+            eprintln!("Failed to write completion script: {e}");
+            exit(1);
+        });
+}
+
+/// Complete `--profile` with the names of profiles found in the ADBC profile
+/// search locations, falling back to file paths when the input looks like one.
+fn complete_profile(current: &OsStr) -> Vec<CompletionCandidate> {
+    let current_str = current.to_string_lossy();
+    if current_str.starts_with('.') || current_str.contains(['/', MAIN_SEPARATOR]) {
+        return PathCompleter::file().complete(current);
+    }
+    list_profiles(&profile_search_paths())
+        .into_iter()
+        .filter(|name| name.starts_with(current_str.as_ref()))
+        .map(CompletionCandidate::new)
+        .collect()
+}
+
+/// Directories searched for connection profiles, in priority order.
+///
+/// Mirrors the private `get_profile_search_paths` in `adbc_driver_manager`.
+fn profile_search_paths() -> Vec<PathBuf> {
+    let mut paths = Vec::new();
+    if let Some(env_paths) = std::env::var_os("ADBC_PROFILE_PATH") {
+        paths.extend(std::env::split_paths(&env_paths));
+    }
+
+    #[cfg(target_os = "windows")]
+    let user_dir = std::env::var_os("LOCALAPPDATA")
+        .map(|dir| PathBuf::from(dir).join("ADBC").join("Profiles"));
+    #[cfg(target_os = "macos")]
+    let user_dir = std::env::var_os("HOME").map(|home| {
+        PathBuf::from(home)
+            .join("Library")
+            .join("Application Support")
+            .join("ADBC")
+            .join("Profiles")
+    });
+    #[cfg(all(unix, not(target_os = "macos")))]
+    let user_dir = std::env::var_os("XDG_CONFIG_HOME")
+        .map(PathBuf::from)
+        .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".config")))
+        .map(|dir| dir.join("adbc").join("profiles"));
+
+    paths.extend(user_dir);
+    paths
+}
+
+/// Names (file stems) of the `.toml` profiles in `dirs`, sorted and deduplicated.
+fn list_profiles(dirs: &[PathBuf]) -> BTreeSet<String> {
+    dirs.iter()
+        .filter_map(|dir| std::fs::read_dir(dir).ok())
+        .flatten()
+        .filter_map(|entry| entry.ok())
+        .map(|entry| entry.path())
+        .filter(|path| path.is_file() && path.extension().is_some_and(|ext| ext == "toml"))
+        .filter_map(|path| path.file_stem()?.to_str().map(str::to_string))
+        .collect()
+}
+
 fn parse_output_path(s: &str) -> Result<PathBuf, String> {
     let path = PathBuf::from(s);
     OutputFormat::from_path(&path)?;
@@ -223,6 +345,25 @@ fn parse_option(option: &str) -> Result<(String, String), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_list_profiles() {
+        let first = tempfile::tempdir().unwrap();
+        let second = tempfile::tempdir().unwrap();
+        std::fs::write(first.path().join("warehouse.toml"), "").unwrap();
+        std::fs::write(first.path().join("notes.txt"), "").unwrap();
+        std::fs::create_dir(first.path().join("subdir.toml")).unwrap();
+        std::fs::write(second.path().join("warehouse.toml"), "").unwrap();
+        std::fs::write(second.path().join("analytics.toml"), "").unwrap();
+
+        let dirs = vec![
+            first.path().to_path_buf(),
+            second.path().to_path_buf(),
+            PathBuf::from("/nonexistent/databow/profiles"),
+        ];
+        let names: Vec<String> = list_profiles(&dirs).into_iter().collect();
+        assert_eq!(names, vec!["analytics", "warehouse"]);
+    }
 
     #[test]
     fn test_parse_output_path_valid() {
