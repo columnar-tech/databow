@@ -547,6 +547,20 @@ Connect to StarRocks:
 databow --driver flightsql --uri grpc://localhost:9408 --username root
 ```
 
+## Supabase
+
+Install the PostgreSQL driver with dbc:
+
+```sh
+dbc install postgresql
+```
+
+Connect to Supabase:
+
+```sh
+databow --uri 'postgresql://username:password@aws-0-us-east-2.pooler.supabase.com:5432/postgres?sslmode=require'
+```
+
 ## Teradata
 
 Install the Teradata driver with dbc:
