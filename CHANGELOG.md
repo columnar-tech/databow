@@ -9,6 +9,7 @@
 - Remove --pre from dbc install quack (#47)
 - Update mariadb example (#51)
 - Update motherduck example
+- Add supabase example (#53)
 
 ### ⚙️ Miscellaneous Tasks
 
