@@ -420,13 +420,13 @@ databow --driver mysql --uri 'root@tcp(localhost:2881)/oceanbase'
 Install the Oracle Database driver with dbc:
 
 ```sh
-dbc install oracle
+dbc install --pre oracle
 ```
 
 Connect to Oracle Database:
 
 ```sh
-databow --driver oracle --uri oracle://system:password@localhost:1521/FREEPDB1
+databow --uri oracle://system:password@localhost:1521/FREEPDB1
 ```
 
 ## ParadeDB
