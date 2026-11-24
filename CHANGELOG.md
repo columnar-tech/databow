@@ -10,6 +10,7 @@
 - Update mariadb example (#51)
 - Update motherduck example
 - Add supabase example (#53)
+- Update oracle example (#55)
 
 ### ⚙️ Miscellaneous Tasks
 
